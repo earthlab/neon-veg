@@ -56,5 +56,5 @@ for (woody_path in dirs){
 
 
 # create circular polygon for each stem based on maxCanopyDiameter
-# 
+# how to set CRS without external files? 
 woody_polygons <- woody_df_to_shp(woody_all)
