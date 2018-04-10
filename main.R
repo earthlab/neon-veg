@@ -1,14 +1,16 @@
 # load packages 
 library(devtools)
 library(geoNEON)
-library(geosphere)
+library(sp)           # CRS
+library(swfscMisc)    # circle.polygon
+library(rgdal)      # writeOGR
 
 # load functions written in external files. 
 # setwd("~/github/neon-veg")
 source("locate_woody_veg.R")
 source("woody_df_to_shp.R")
 source("merge_vst_tables.R")
-
+source("get_vst_crs.R")
 
 # define path to NEON l1 Woody Vegetation data 
 main_path <- "~/Documents/earth-analytics/data/SJER_2017/NEON_struct-woody-plant/"
@@ -48,13 +50,19 @@ for (woody_path in dirs){
   if (first_loop == 1){
     woody_all <- woody_vst
     first_loop <- 0
+    
   } else {
     woody_all <- rbind(woody_all, woody_vst)
   }
-  
 }
 
+# create coordinate reference system object based on
+# UTM zone info in the "vst_plotperyear" table
+crs <- get_vst_crs(woody_path)
 
 # create circular polygon for each stem based on maxCanopyDiameter
-# how to set CRS without external files? 
-woody_polygons <- woody_df_to_shp(woody_all)
+woody_polygons <- woody_df_to_shp(df=woody_all, 
+                                  coord_ref=crs,
+                                  shrink=1,
+                                  num_sides = 8,
+                                  shp_filename = "test_sjer_polygons")

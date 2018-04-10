@@ -20,18 +20,18 @@ woody_df_to_shp = function(df, coord_ref, shrink, num_sides, shp_filename){
   #         spatialPolygonsDataFrame containing crown polygons
   
   # for each tree 
-  for (v in 1:length(df$easting)){
+  for (i in 1:length(df$easting)){
     
     # calculate radius of circular polygon [units of km] 
-    r = round(df$maxcanopydiam[v]) / 2
+    r = round(df$maxCrownDiameter[i]) / 2
     
     # reduce radius by shrink factor to reduce polygon size 
     r = signif( (r / as.numeric(shrink)), 2)
     
     # create circular polygon coordinates with center location, 
     # number of sides, units of distance, polygon calculation
-    c <- circle.polygon(df$easting[v], 
-                        df$northing[v], 
+    c <- circle.polygon(df$easting[i], 
+                        df$northing[i], 
                         r, sides=num_sides, 
                         by.length=FALSE, 
                         units="km", 
@@ -45,17 +45,17 @@ woody_df_to_shp = function(df, coord_ref, shrink, num_sides, shp_filename){
     proj4string(sps) = coord_ref
     
     # create data to associate with the polygon coordinates 
-    d = data.frame(sci_name = df$scientificname[v],
-                   sci_id = df$taxonid[v],
-                   ind_id = df$indvidualid[v],
-                   max_diam = df$maxcanopydiam[v],
-                   height = df$stemheight[v])
+    d = data.frame(scientificName = as.character(df$scientificName[i]),
+                   taxonID = as.character(df$taxonID[i]),
+                   individualID = df$individualID[i],
+                   crownDiam = df$maxCrownDiameter[i],
+                   height = df$height[i])
     
     # turn the SpatialPolygons object into a SpatialPolygonsDataFrame
     spdf_out = SpatialPolygonsDataFrame(sps,d)
     
     # check for the first loop iteration
-    if (v > 1){
+    if (i> 1){
       # If it's a later loop iteration, merge polygons together 
       spdfs<-rbind(spdf_out, spdfs, makeUniqueIDs = TRUE)
     } else { 
