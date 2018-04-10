@@ -17,10 +17,16 @@ merge_vst_tables <- function(vst_mapping, vst_individual){
     i <- match(as.character(vst_mapping$individualID),
                as.character(vst_individual$individualID))
     
-    # add species columns to structure table
+    # check for duplicates and keep most recent measurement? 
+    
+    # add height and crown diameter columns to mapping table
     merged <- vst_mapping
     merged$height <- vst_individual$height[i]
     merged$maxCrownDiameter <- vst_individual$maxCrownDiameter[i]
+    
+    # keep only entries that have height and crown diameter values
+    merged <- merged[complete.cases(merged$height) & 
+                     complete.cases(merged$maxCrownDiameter),]
     
     return(merged)
 }
