@@ -3,14 +3,16 @@ library(devtools)
 library(geoNEON)
 library(sp)           # CRS
 library(swfscMisc)    # circle.polygon
-library(rgdal)      # writeOGR
+library(rgdal)        # writeOGR
+library(dplyr)
 
-# load functions written in external files. 
+# load functions written in external R files. 
 # setwd("~/github/neon-veg")
 source("locate_woody_veg.R")
 source("woody_df_to_shp.R")
 source("merge_vst_tables.R")
 source("get_vst_crs.R")
+source("list_tiles_with_plants.R")
 
 # define path to NEON l1 Woody Vegetation data 
 main_path <- "~/Documents/earth-analytics/data/SJER_2017/NEON_struct-woody-plant/"
@@ -43,10 +45,11 @@ for (woody_path in dirs){
   # load "vst_apparentindividual" table
   woody_individual <- read.csv(woody_individual_path)
   
-  # match mapped stems from "vst_mappingandtagging" with structure data from "vst_apparentindividual"
+  # match mapped stems from "vst_mappingandtagging" with structure data 
+  # from "vst_apparentindividual" based on individualID 
   woody_vst <- merge_vst_tables(woody_utm, woody_individual)
   
-  # combine woody veg struct data to a single data frame 
+  # combine woody veg structure data to a single data frame 
   if (first_loop == 1){
     woody_all <- woody_vst
     first_loop <- 0
@@ -55,6 +58,22 @@ for (woody_path in dirs){
     woody_all <- rbind(woody_all, woody_vst)
   }
 }
+
+# list the 1km x 1km tiles containing field data
+tiles <- list_tiles_with_plants(woody_all)
+
+# Apply area threshold: 
+# since the goal of this work is to create polygons that outline individual 
+# plants to extract their spectra, we only want to keep polygons that are 
+# large enough to extract "pure" spectra. The spatial resolution of the RGB 
+# digital camera data is 25cm x 25cm. The area of the hyperspectral imagery 
+# and gridded LiDAR-derived CHM Ecocystem Structure product have a coarser 
+# spatial resolution, 1m^2^ or 100cm x 100cm. An area threshold was set here 
+# to keep only polygons with an area greater than or equal to 4 HS / CHM pixels
+# based on the maxCrownDiameter (in units of meters)
+
+woody_thresh <- apply_area_threshold(woody_all,
+                                     nPix=4)
 
 # create coordinate reference system object based on
 # UTM zone info in the "vst_plotperyear" table
