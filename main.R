@@ -23,6 +23,7 @@ main_path <- "~/Documents/earth-analytics/data/SJER_2017/NEON_struct-woody-plant
 dirs <- list.dirs(path = main_path )
 dirs <-dirs[ grepl("NEON.D17.SJER", dirs) ]
 
+
 first_loop <- 1 # loop counter
 for (woody_path in dirs){
   
@@ -60,19 +61,23 @@ for (woody_path in dirs){
   }
 }
 
+
 # list the 1km x 1km tiles containing field data
 tiles <- list_tiles_with_plants(woody_all)
+
 
 # create coordinate reference system object based on
 # UTM zone info in the "vst_plotperyear" table
 crs <- get_vst_crs(woody_path)
+
 
 # create circular polygon for each stem based on maxCanopyDiameter
 woody_polygons <- woody_df_to_shp(df=woody_all, 
                                   coord_ref=crs,
                                   shrink=1,
                                   num_sides = 8,
-                                  shp_filename = "test_sjer_polygons")
+                                  shp_filename = "output/test_sjer_polygons")
+
 
 # Apply area threshold: 
 # since the goal of this work is to create polygons that outline individual 
