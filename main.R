@@ -13,6 +13,7 @@ source("woody_df_to_shp.R")
 source("merge_vst_tables.R")
 source("get_vst_crs.R")
 source("list_tiles_with_plants.R")
+source("apply_area_threshold.R")
 
 # define path to NEON l1 Woody Vegetation data 
 main_path <- "~/Documents/earth-analytics/data/SJER_2017/NEON_struct-woody-plant/"
@@ -62,6 +63,17 @@ for (woody_path in dirs){
 # list the 1km x 1km tiles containing field data
 tiles <- list_tiles_with_plants(woody_all)
 
+# create coordinate reference system object based on
+# UTM zone info in the "vst_plotperyear" table
+crs <- get_vst_crs(woody_path)
+
+# create circular polygon for each stem based on maxCanopyDiameter
+woody_polygons <- woody_df_to_shp(df=woody_all, 
+                                  coord_ref=crs,
+                                  shrink=1,
+                                  num_sides = 8,
+                                  shp_filename = "test_sjer_polygons")
+
 # Apply area threshold: 
 # since the goal of this work is to create polygons that outline individual 
 # plants to extract their spectra, we only want to keep polygons that are 
@@ -75,13 +87,3 @@ tiles <- list_tiles_with_plants(woody_all)
 woody_thresh <- apply_area_threshold(woody_all,
                                      nPix=4)
 
-# create coordinate reference system object based on
-# UTM zone info in the "vst_plotperyear" table
-crs <- get_vst_crs(woody_path)
-
-# create circular polygon for each stem based on maxCanopyDiameter
-woody_polygons <- woody_df_to_shp(df=woody_all, 
-                                  coord_ref=crs,
-                                  shrink=1,
-                                  num_sides = 8,
-                                  shp_filename = "test_sjer_polygons")
