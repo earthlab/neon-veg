@@ -16,7 +16,8 @@ source("list_tiles_with_plants.R")
 source("apply_area_threshold.R")
 
 # define path to NEON l1 Woody Vegetation data 
-main_path <- "~/Documents/earth-analytics/data/SJER_2017/NEON_struct-woody-plant/"
+main_path <- "~/Documents/earth-analytics/data/SJER_2017/NEON_struct-woody-plant/" #desktop
+main_path <- "/Users/victoriascholl/CU-Boulder/earthlab/NEON_data/2017_SJER/NEON_struct-woody-plant/" #laptop
 
 
 # loop through folders of field data with different dates
@@ -54,10 +55,14 @@ for (woody_path in dirs){
   # combine woody veg structure data to a single data frame 
   if (first_loop == 1){
     woody_all <- woody_vst
+    woody_mapping_all <- woody_utm
+    woody_individual_all <- woody_individual
     first_loop <- 0
     
   } else {
     woody_all <- rbind(woody_all, woody_vst)
+    woody_mapping_all <- rbind(woody_mapping_all, woody_utm)
+    woody_individual_all <- rbind(woody_individual_all, woody_individual)
   }
 }
 
@@ -91,4 +96,6 @@ woody_polygons <- woody_df_to_shp(df=woody_all,
 
 woody_thresh <- apply_area_threshold(woody_all,
                                      nPix=4)
+
+# delete/merge/clip overlapping polygons
 
