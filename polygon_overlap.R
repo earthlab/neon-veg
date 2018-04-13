@@ -5,7 +5,7 @@ polygon_overlap <- function(df, nPix){
   thresh <- 25 * 25 * 16 * nPix # [cm^2]
   
   # order polygons from smallest to largest area
-  polys_ordered <- df[order(df$maxCrownDiameter),]
+  polys_ordered <- df[order(df$crownDiam),]
   
   # create a polygon data frame to update with filtered/deleted/merged entries
   polys_filtered <- polys_ordered
@@ -35,7 +35,8 @@ polygon_overlap <- function(df, nPix){
         current_poly.height <- current_poly@data$height
         test_poly <- get_poly(polys_filtered, 
                               index_type = 'id', 
-                              number = overlap@data$individualID.2[[o]])
+                              number = overlap@data$individualID.2[[o]],
+                              crs)
         test_poly.area <- test_poly@polygons[[1]]@area
         test_poly.height <- test_poly@data$height
         

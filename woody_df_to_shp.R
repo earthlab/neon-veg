@@ -63,7 +63,9 @@ woody_df_to_shp = function(df, coord_ref, shrink, num_sides, shp_filename){
       spdfs <- spdf_out
     }
   }
+  
   # write polygon(s) to shapefile  
   writeOGR(spdfs, getwd(),shp_filename, driver="ESRI Shapefile", overwrite_layer = TRUE)
+  
   return(spdfs)
 }

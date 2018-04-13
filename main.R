@@ -29,6 +29,7 @@ source("get_vst_crs.R")
 source("list_tiles_with_plants.R")
 source("apply_area_threshold.R")
 source("polygon_overlap.R")
+source("get_poly.R")
 
 # loop through folders of field data with different dates
 dirs <- list.dirs(path = main_path )
@@ -85,27 +86,16 @@ tiles <- list_tiles_with_plants(woody_all)
 # UTM zone info in the "vst_plotperyear" table
 crs <- get_vst_crs(woody_path)
 
+# remove polygons with area < 4 hyperspectral pixels 
+woody_thresh <- apply_area_threshold(woody_all,
+                                     nPix=4)
 
 # create circular polygon for each stem based on maxCanopyDiameter
-woody_polygons <- woody_df_to_shp(df=woody_all, 
+woody_polygons <- woody_df_to_shp(df=woody_thresh, 
                                   coord_ref=crs,
                                   shrink=1,
                                   num_sides = 8,
                                   shp_filename = shp_filename)
 
-
-# Apply area threshold: 
-# since the goal of this work is to create polygons that outline individual 
-# plants to extract their spectra, we only want to keep polygons that are 
-# large enough to extract "pure" spectra. The spatial resolution of the RGB 
-# digital camera data is 25cm x 25cm. The area of the hyperspectral imagery 
-# and gridded LiDAR-derived CHM Ecocystem Structure product have a coarser 
-# spatial resolution, 1m^2^ or 100cm x 100cm. An area threshold was set here 
-# to keep only polygons with an area greater than or equal to 4 HS / CHM pixels
-# based on the maxCrownDiameter (in units of meters)
-
-woody_thresh <- apply_area_threshold(woody_all,
-                                     nPix=4)
-
 # delete/merge/clip overlapping polygons
-polygon_overlap(woody_thresh, nPix=4)
+woody_final <- polygon_overlap(woody_polygons, nPix=4)
