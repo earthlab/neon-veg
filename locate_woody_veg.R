@@ -19,9 +19,9 @@ locate_woody_veg <- function(df){
                    complete.cases(df$stemDistance),]
   
   
-  # use the geoNEON R package to get location information for each woody_utm veg entry
+  # use the geoNEON R package to pull geolocation data from the NEON API
+  # get location information for each woody_utm veg entry 
   woody_utm_loc <- def.extr.geo.os(woody_utm, 'namedLocation')
-  
   
   # get easting/northing of reference point ID
   ref_east <- as.numeric(woody_utm_loc$api.easting)

@@ -1,6 +1,44 @@
-# neon-veg
-Linking field-based and airborne data
+neon-veg
+================
 
-To derive a more accurate estimate of the location of individual trees in the NEON woody vegetation structure data product, positions are calculated manually here. (The geoNEON package does not yet support this data product)
+A collection of R codes to create crown polygons based on field-based [NEON Woody Vegetation Structure 
+](http://data.neonscience.org/api/v0/documents/NEON_vegStructure_userGuide_vA)
 
-geoNEON package: https://github.com/NEONScience/NEON-geolocation/tree/master/geoNEON
+Installation
+================
+
+### Dependencies
+
+To run the workflow, you'll need the following R packages:
+
+-   devtools
+-	geoNEON
+-	sp
+-	swfscMisc
+-	rgdal
+-	dplyr
+
+Individual tree stems are recorded using distance and azimuth from a subplot reference point. To derive stem location in UTM coordinates, pull geolocation data for the sampling plots using the geoNEON package.
+
+To install the [geoNEON](https://github.com/NEONScience/NEON-geolocation/tree/master/geoNEON) package: 
+
+``` r
+library(devtools)
+install_github('NEONScience/NEON-geolocation/geoNEON', dependencies=TRUE)
+library(geoNEON)
+```
+
+Setup
+================
+
+1. Set your current working directory to neon-veg in your local environment so the local functions can be loaded: 
+
+```{r}
+setwd("path/neon-veg")
+```
+
+
+2. After downloading the Woody plant vegetation structure data from the NEON Data Portal as a .zip file, define the directory where it sits as the `main_path` variable within the SETUP section of the main.R script. 
+
+
+3. Specify the output path and filename for the shapefile to be generated within the SETUP section of the main.R script. 
