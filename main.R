@@ -14,6 +14,7 @@ source("merge_vst_tables.R")
 source("get_vst_crs.R")
 source("list_tiles_with_plants.R")
 source("apply_area_threshold.R")
+source("polygon_overlap.R")
 
 # define path to NEON l1 Woody Vegetation data 
 main_path <- "~/Documents/earth-analytics/data/SJER_2017/NEON_struct-woody-plant/" #desktop
@@ -98,4 +99,4 @@ woody_thresh <- apply_area_threshold(woody_all,
                                      nPix=4)
 
 # delete/merge/clip overlapping polygons
-
+polygon_overlap(woody_thresh, nPix=4)

@@ -17,7 +17,7 @@ apply_area_threshold <- function(df, nPix){
   # gridded LiDAR products and HS pixels are 1m x 1m
   px_area_hs <- 16 * px_area_rgb
 
-  # multiple area of 1 pixel by the numPix input parameter
+  # multiply area of 1 pixel by the numPix input parameter
   thresh <- px_area_hs * nPix
   
   # calculate approximate area [cm^2] of each plant based on diameter 
