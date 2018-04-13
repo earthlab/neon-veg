@@ -1,21 +1,21 @@
 # load packages 
 library(devtools)
 library(geoNEON)
-library(sp)           # CRS
-library(swfscMisc)    # circle.polygon
-library(rgdal)        # writeOGR
+library(sp)           
+library(swfscMisc)    
+library(rgdal)        
 library(dplyr)
 
 
 ########################### SETUP ##################################
-# set working directory to neon-veg in your local environment
+
+# set working directory to neon-veg in local environment
 setwd("~/github/neon-veg")
 
-# define path to directory containing NEON l1 Woody Vegetation data 
-main_path <- "~/Documents/earth-analytics/data/SJER_2017/NEON_struct-woody-plant/" #desktop
-#main_path <- "/Users/victoriascholl/CU-Boulder/earthlab/NEON_data/2017_SJER/NEON_struct-woody-plant/" #laptop
+# path to directory containing NEON l1 Woody Vegetation data 
+main_path <- "~/Documents/NEON/SJER/NEON_struct-woody-plant/" 
 
-# define path and filename of output shapefile to be written
+# path and filename of output shapefile to be written
 shp_filename <- "output/test_sjer_polygons"
 
 #####################################################################
