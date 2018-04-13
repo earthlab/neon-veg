@@ -6,8 +6,22 @@ library(swfscMisc)    # circle.polygon
 library(rgdal)        # writeOGR
 library(dplyr)
 
-# load functions written in external R files. 
-# setwd("~/github/neon-veg")
+
+########################### SETUP ##################################
+# set working directory to neon-veg in your local environment
+setwd("~/github/neon-veg")
+
+# define path to directory containing NEON l1 Woody Vegetation data 
+main_path <- "~/Documents/earth-analytics/data/SJER_2017/NEON_struct-woody-plant/" #desktop
+#main_path <- "/Users/victoriascholl/CU-Boulder/earthlab/NEON_data/2017_SJER/NEON_struct-woody-plant/" #laptop
+
+# define path and filename of output shapefile to be written
+shp_filename <- "output/test_sjer_polygons"
+
+#####################################################################
+
+
+# load local functions written in external R files. 
 source("locate_woody_veg.R")
 source("woody_df_to_shp.R")
 source("merge_vst_tables.R")
@@ -15,11 +29,6 @@ source("get_vst_crs.R")
 source("list_tiles_with_plants.R")
 source("apply_area_threshold.R")
 source("polygon_overlap.R")
-
-# define path to NEON l1 Woody Vegetation data 
-main_path <- "~/Documents/earth-analytics/data/SJER_2017/NEON_struct-woody-plant/" #desktop
-main_path <- "/Users/victoriascholl/CU-Boulder/earthlab/NEON_data/2017_SJER/NEON_struct-woody-plant/" #laptop
-
 
 # loop through folders of field data with different dates
 dirs <- list.dirs(path = main_path )
@@ -82,7 +91,7 @@ woody_polygons <- woody_df_to_shp(df=woody_all,
                                   coord_ref=crs,
                                   shrink=1,
                                   num_sides = 8,
-                                  shp_filename = "output/test_sjer_polygons")
+                                  shp_filename = shp_filename)
 
 
 # Apply area threshold: 
