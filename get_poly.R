@@ -14,11 +14,11 @@ get_poly = function(spdf, index_type, number){
   print(i)
   
   coords = spdf@polygons[[i]]@Polygons[[1]]@coords
-  extra_data = as.data.frame(spdf@data[spdf@data$ind_id == spdf$ind_id[i],], row.names = spdf$ind_id[i])
+  extra_data = as.data.frame(spdf@data[spdf@data$individualID == spdf$individualID[i],], row.names = as.character(spdf$individualID[i]))
   
   # create SpatialPolygons
   P1 = Polygon(coords)
-  Ps1 = SpatialPolygons(list(Polygons(list(P1), ID = spdf$ind_id[i])), 
+  Ps1 = SpatialPolygons(list(Polygons(list(P1), ID = spdf$individualID[i])), 
                         proj4string=spdf@CRS)
   
   # create SpatialPolygonsDataFrame
