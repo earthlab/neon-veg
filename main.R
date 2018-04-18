@@ -5,6 +5,7 @@ library(sp)
 library(swfscMisc)    
 library(rgdal)        
 library(dplyr)
+library(rgeos)
 
 
 ########################### SETUP ##################################
@@ -90,12 +91,23 @@ crs <- get_vst_crs(woody_path)
 woody_thresh <- apply_area_threshold(woody_all,
                                      nPix=4)
 
+# remove duplicate entries; keep most recent
+woody_thresh <- woody_thresh %>% 
+  group_by(individualID) %>%
+  slice(which.max(as.Date(date)))
+
+# write to csv
+write.csv(woody_thresh, file = 'output/woody_veg.csv')
+
 # create circular polygon for each stem based on maxCanopyDiameter
 woody_polygons <- woody_df_to_shp(df=woody_thresh, 
                                   coord_ref=crs,
                                   shrink=1,
                                   num_sides = 8,
-                                  shp_filename = shp_filename)
+                                  shp_filename=shp_filename)
 
 # delete/merge/clip overlapping polygons
-woody_final <- polygon_overlap(woody_polygons, nPix=4)
+woody_final <- polygon_overlap(woody_polygons,
+                               nPix=4, 
+                               shp_filename=shp_filename)
+

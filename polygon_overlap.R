@@ -1,4 +1,4 @@
-polygon_overlap <- function(df, nPix){
+polygon_overlap <- function(df, nPix, shp_filename){
   
   # multiply area of 1 pixel by the numPix input parameter
   # rgb pixels are 25cm, 16 of them in a single HS pixel
@@ -12,6 +12,8 @@ polygon_overlap <- function(df, nPix){
   
   for (individualID in polys_ordered@data$individualID){
     
+    print(individualID)
+    
     # if this polygon was removed from the polys_filtered
     # data frame in a previous iteration,
     # skip it 
@@ -24,7 +26,7 @@ polygon_overlap <- function(df, nPix){
     other_polys <- polys_filtered[polys_filtered$individualID!=current_poly$individualID,]
     
     # check for overlap between current polygon and all polygons
-    overlap <- intersect(current_poly, other_polys)
+    overlap <- raster::intersect(current_poly, other_polys)
     n_overlap <- length(overlap)
     
     if(n_overlap>0){ 
@@ -35,13 +37,12 @@ polygon_overlap <- function(df, nPix){
         current_poly.height <- current_poly@data$height
         test_poly <- get_poly(polys_filtered, 
                               index_type = 'id', 
-                              number = overlap@data$individualID.2[[o]],
-                              crs)
+                              number = overlap@data$individualID.2[[o]])
         test_poly.area <- test_poly@polygons[[1]]@area
         test_poly.height <- test_poly@data$height
         
         # get area of the overlap between current polygon and test polygon
-        overlap.area <- round(intersect(current_poly, test_poly)@polygons[[1]]@area, 2)
+        overlap.area <- round(raster::intersect(current_poly, test_poly)@polygons[[1]]@area, 2)
         
         # if total overlap (compare area of overlap to current polygon area),
         # remove current polygon from the collection of polygons
@@ -68,7 +69,7 @@ polygon_overlap <- function(df, nPix){
             
             # if clipped area is large enough, save it in place of the current polygon 
             # and update the polys_filtered data frame 
-            if((clipped@polygons[[1]]@area * 10000) > area_thresh){
+            if((clipped@polygons[[1]]@area * 10000) > thresh){
               polys_filtered <- polys_filtered[polys_filtered$individualID!=current_poly$individualID,]
               polys_filtered <- rbind(clipped, polys_filtered)
               # if the clipped area is too small, don't keep the current polygon in the 
@@ -85,7 +86,7 @@ polygon_overlap <- function(df, nPix){
             # and update the polys_filtered data frame 
             # get individualID of test polygon
             j <- which(polys_filtered@data$individualID == test_poly@data$individualID)
-            if((clipped@polygons[[1]]@area * 10000) > area_thresh){
+            if((clipped@polygons[[1]]@area * 10000) > thresh){
               # replace with clipped polygon
               polys_filtered <- rbind(polys_filtered[1:j-1,],
                                       clipped, 
@@ -101,9 +102,12 @@ polygon_overlap <- function(df, nPix){
       }
     }
   }
+  
+  # write final polygons to file after checking for overlap
   writeOGR(polys_filtered, getwd(),
-           "test_polygon_overlap", 
+           paste(shp_filename,"checked_overlap",sep="_"), 
            driver="ESRI Shapefile", overwrite_layer = TRUE)
 
+  return(polys_filtered)
   
 }

@@ -19,7 +19,7 @@ get_poly = function(spdf, index_type, number){
   # create SpatialPolygons
   P1 = Polygon(coords)
   Ps1 = SpatialPolygons(list(Polygons(list(P1), ID = spdf$individualID[i])), 
-                        proj4string=spdf@CRS)
+                        proj4string=spdf@proj4string)
   
   # create SpatialPolygonsDataFrame
   Ps1 = SpatialPolygonsDataFrame(Ps1, 
