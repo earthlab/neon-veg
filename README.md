@@ -17,6 +17,7 @@ To run the workflow, you'll need the following R packages:
 -	swfscMisc
 -	rgdal
 -	dplyr
+- 	rgeos
 
 Individual tree stems are recorded using distance and azimuth from a subplot reference point. To derive stem location in UTM coordinates, pull geolocation data for the sampling plots using the [geoNEON](https://github.com/NEONScience/NEON-geolocation/tree/master/geoNEON)  package.
 

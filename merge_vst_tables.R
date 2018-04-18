@@ -23,6 +23,7 @@ merge_vst_tables <- function(vst_mapping, vst_individual){
     merged <- vst_mapping
     merged$height <- vst_individual$height[i]
     merged$maxCrownDiameter <- vst_individual$maxCrownDiameter[i]
+    merged$date <- vst_individual$date[i]
     
     # keep only entries that have height and crown diameter values
     merged <- merged[complete.cases(merged$height) & 
