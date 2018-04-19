@@ -12,7 +12,8 @@ merge_vst_tables <- function(vst_mapping, vst_individual){
     #   merged:
     #     input data frame with additional columns of information
     
-    
+  print("Merging vegetation structure tables...")  
+  
     # find matching individual ID's between the tables
     i <- match(as.character(vst_mapping$individualID),
                as.character(vst_individual$individualID))

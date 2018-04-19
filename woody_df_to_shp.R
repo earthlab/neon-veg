@@ -19,6 +19,8 @@ woody_df_to_shp = function(df, coord_ref, shrink, num_sides, shp_filename){
   #   spdfs:
   #         spatialPolygonsDataFrame containing crown polygons
   
+  print("Creating circular polygons based on stem location and crown diameter...")
+  
   # for each tree 
   for (i in 1:length(df$easting)){
     

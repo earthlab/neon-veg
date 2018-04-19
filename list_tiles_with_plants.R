@@ -1,5 +1,8 @@
-list_tiles_with_plants <- function(woody){
+list_tiles_with_plants <- function(woody,out_dir){
   # generate a list of 1km x 1km tiles containing field data
+  # write list to a text file in the output directory provided
+  
+  print("Generating list of tiles containing stems...")
   
   # get easting, northing coordinates of all plants
   e <- NA
@@ -19,6 +22,12 @@ list_tiles_with_plants <- function(woody){
   # order by ascending tile coordinates 
   tiles <- tiles %>%
               arrange(e)
+  
+  # write to text file 
+  tile_names <- paste(tiles$e, tiles$n, sep="_")
+  tiles_file <- file(paste(out_dir,"list_tiles.txt", sep=""))
+  writeLines(tile_names, tiles_file)
+  close(tiles_file)
   
   return(tiles)
 }

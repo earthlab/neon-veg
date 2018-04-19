@@ -1,5 +1,7 @@
 polygon_overlap <- function(df, nPix, shp_filename){
   
+  print("Checking for overlap between polygons...")
+  
   # multiply area of 1 pixel by the numPix input parameter
   # rgb pixels are 25cm, 16 of them in a single HS pixel
   thresh <- 25 * 25 * 16 * nPix # [cm^2]
@@ -11,8 +13,6 @@ polygon_overlap <- function(df, nPix, shp_filename){
   polys_filtered <- polys_ordered
   
   for (individualID in polys_ordered@data$individualID){
-    
-    print(individualID)
     
     # if this polygon was removed from the polys_filtered
     # data frame in a previous iteration,

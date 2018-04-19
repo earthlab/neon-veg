@@ -12,6 +12,8 @@ apply_area_threshold <- function(df, nPix){
   #     number of pixels describing the area required to 
   #     keep polygons. 
   
+  print("Removing polygons below area threshold...")
+  
   # area of image pixels [cm^2] for thresholding sub-pixel plants 
   px_area_rgb <- 25 * 25 #[cm^2]
   # gridded LiDAR products and HS pixels are 1m x 1m

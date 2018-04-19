@@ -16,8 +16,8 @@ setwd("~/github/neon-veg")
 # path to directory containing NEON l1 Woody Vegetation data 
 main_path <- "~/Documents/NEON/SJER/NEON_struct-woody-plant/" 
 
-# path and filename of output shapefile to be written
-shp_filename <- "output/test_sjer_polygons"
+# specify output directory path and filename of output shapefile to be written
+out_dir <- "output/"
 
 #####################################################################
 
@@ -80,8 +80,7 @@ for (woody_path in dirs){
 
 
 # list the 1km x 1km tiles containing field data
-tiles <- list_tiles_with_plants(woody_all)
-
+tiles <- list_tiles_with_plants(woody_all, out_dir)
 
 # create coordinate reference system object based on
 # UTM zone info in the "vst_plotperyear" table
@@ -97,17 +96,18 @@ woody_thresh <- woody_thresh %>%
   slice(which.max(as.Date(date)))
 
 # write to csv
-write.csv(woody_thresh, file = 'output/woody_veg.csv')
+write.csv(woody_thresh, file = paste(out_dir,"vst_merged.csv"))
 
 # create circular polygon for each stem based on maxCanopyDiameter
 woody_polygons <- woody_df_to_shp(df=woody_thresh, 
                                   coord_ref=crs,
                                   shrink=1,
                                   num_sides = 8,
-                                  shp_filename=shp_filename)
+                                  shp_filename=paste(out_dir,"polygons",sep=""))
 
 # delete/merge/clip overlapping polygons
 woody_final <- polygon_overlap(woody_polygons,
                                nPix=4, 
-                               shp_filename=shp_filename)
+                               shp_filename=paste(out_dir,"polygons_checked_overlap",sep=""))
 
+# explore distribution of vegetation data 

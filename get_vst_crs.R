@@ -1,5 +1,7 @@
 get_vst_crs <- function(woody_path){
   
+  print("Retrieving CRS...")
+  
   # define path to vst_plotperyear table,
   # which contains geodetic datum and UTM zone 
   vst_path <- paste(woody_path, 
