@@ -31,6 +31,10 @@ source("list_tiles_with_plants.R")
 source("apply_area_threshold.R")
 source("polygon_overlap.R")
 source("get_poly.R")
+source("check_create_dir.R")
+
+# create output directory if it does not exist 
+check_create_dir(out_dir)
 
 # loop through folders of field data with different dates
 dirs <- list.dirs(path = main_path )
@@ -111,3 +115,4 @@ woody_final <- polygon_overlap(woody_polygons,
                                shp_filename=paste(out_dir,"polygons_checked_overlap",sep=""))
 
 # explore distribution of vegetation data 
+
