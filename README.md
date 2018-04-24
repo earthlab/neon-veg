@@ -1,8 +1,8 @@
 neon-veg
 ================
 
-A collection of R code to create crown polygons based on field-based [NEON Woody Vegetation Structure 
-](http://data.neonscience.org/api/v0/documents/NEON_vegStructure_userGuide_vA) data.
+A collection of R code to create crown polygons based on field-based NEON Woody Vegetation Structure data.
+
 
 Installation
 ================
@@ -33,6 +33,8 @@ Setup
 ================
 
 1. Download the Woody Plant Vegetation Structure data. If you downloaded it as a .zip file, be sure to unzip the file before proceeding. 
+
+*For a site with multiple dates of field data collection, there should be a series of folders with the collection date included in their names. Inside, there are a series of Excel data tables including **vst_apparentindividual**, **vst_mappingandtagging**, and **vst_plotperyear**, which contain crown structure measurements, stem locations + species, and projection information, respectively. For more information, consult the [NEON User Guide to Woody Plant Vegetation Structure](http://data.neonscience.org/api/v0/documents/NEON_vegStructure_userGuide_vA).* 
 
 
 Within the SETUP section of the `main.R` script: 
