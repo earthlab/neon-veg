@@ -1,6 +1,6 @@
 polygon_overlap <- function(df, nPix, shp_filename){
   
-  print("Checking for overlap between polygons...")
+  message("\nChecking for overlap between polygons...")
   
   # multiply area of 1 pixel by the numPix input parameter
   # rgb pixels are 25cm, 16 of them in a single HS pixel
@@ -105,7 +105,7 @@ polygon_overlap <- function(df, nPix, shp_filename){
   
   # write final polygons to file after checking for overlap
   writeOGR(polys_filtered, getwd(),
-           paste(shp_filename,"checked_overlap",sep="_"), 
+           paste(shp_filename), 
            driver="ESRI Shapefile", overwrite_layer = TRUE)
 
   return(polys_filtered)
