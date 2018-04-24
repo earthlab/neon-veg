@@ -11,8 +11,6 @@ get_poly = function(spdf, index_type, number){
     i <- number
   }
   
-  print(i)
-  
   coords = spdf@polygons[[i]]@Polygons[[1]]@coords
   extra_data = as.data.frame(spdf@data[spdf@data$individualID == spdf$individualID[i],], row.names = as.character(spdf$individualID[i]))
   

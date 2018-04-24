@@ -13,7 +13,7 @@ locate_woody_veg <- function(df){
   #     input data frame with two additional columns,
   #     easting and northing coordinates of mapped stems
   
-  print("Calculating UTM coordinates of tree stems...")
+  message("\nCalculating UTM coordinates of tree stems...")
   
   # remove all rows without stem distance & azimuth data
   woody_utm <- df[complete.cases(df$stemAzimuth) & 

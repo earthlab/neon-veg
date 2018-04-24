@@ -19,7 +19,7 @@ woody_df_to_shp = function(df, coord_ref, shrink, num_sides, shp_filename){
   #   spdfs:
   #         spatialPolygonsDataFrame containing crown polygons
   
-  print("Creating circular polygons based on stem location and crown diameter...")
+  message("\nCreating circular polygons based on stem location and crown diameter...")
   
   # for each tree 
   for (i in 1:length(df$easting)){
@@ -67,7 +67,12 @@ woody_df_to_shp = function(df, coord_ref, shrink, num_sides, shp_filename){
   }
   
   # write polygon(s) to shapefile  
-  writeOGR(spdfs, getwd(),shp_filename, driver="ESRI Shapefile", overwrite_layer = TRUE)
+  suppressWarnings(
+    writeOGR(spdfs, 
+             getwd(),
+             shp_filename, 
+             driver="ESRI Shapefile", 
+             overwrite_layer = TRUE))
   
   return(spdfs)
 }

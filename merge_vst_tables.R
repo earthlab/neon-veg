@@ -12,7 +12,7 @@ merge_vst_tables <- function(vst_mapping, vst_individual){
     #   merged:
     #     input data frame with additional columns of information
     
-  print("Merging vegetation structure tables...")  
+  message("\nMerging vegetation structure tables...")  
   
     # find matching individual ID's between the tables
     i <- match(as.character(vst_mapping$individualID),
@@ -32,6 +32,8 @@ merge_vst_tables <- function(vst_mapping, vst_individual){
     # keep only entries that have height and crown diameter values
     merged <- merged[complete.cases(merged$height) & 
                      complete.cases(merged$maxCrownDiameter),]
+    
+    
     
     return(merged)
 }
