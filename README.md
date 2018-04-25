@@ -11,43 +11,30 @@ Installation
 
 To run the workflow, you'll need the following R packages:
 
--   devtools
+- devtools
 -	geoNEON
 -	sp
 -	swfscMisc
 -	rgdal
 -	dplyr
-- 	rgeos
+-	rgeos
 
 Individual tree stems are recorded using distance and azimuth from a subplot reference point. To derive stem location in UTM coordinates, pull geolocation data for the sampling plots using the [geoNEON](https://github.com/NEONScience/NEON-geolocation/tree/master/geoNEON)  package.
 
 To install the geoNEON package: 
 
 ``` r
-library(devtools)
-install_github('NEONScience/NEON-geolocation/geoNEON', dependencies=TRUE)
-library(geoNEON)
+devtools::install_github('NEONScience/NEON-geolocation/geoNEON', dependencies=TRUE)
 ```
 
 Setup
 ================
 
-1. Download the Woody Plant Vegetation Structure data. If you downloaded it as a .zip file, be sure to unzip the file before proceeding. 
+1. Download the Woody Plant Vegetation Structure data. If you downloaded it as a .zip file, be sure to unzip the contents into the directory for this project before proceeding (e.g., `neon-veg/SJER/`). 
 
 *For a site with multiple dates of field data collection, there should be a series of folders with the collection date included in their names. Inside each folder, there are a series of Excel data tables including **vst_apparentindividual**, **vst_mappingandtagging**, and **vst_plotperyear**, which contain crown structure measurements, stem locations + species, and projection information, respectively. For more information, consult the [NEON User Guide to Woody Plant Vegetation Structure](http://data.neonscience.org/api/v0/documents/NEON_vegStructure_userGuide_vA).* 
 
-
-Within the SETUP section of the `main.R` script: 
-
-2. Set your current working directory to neon-veg in your local environment so the local functions can be loaded:
-
-```{r}
-setwd("path/neon-veg")
-```
-
-3. Define the directory where the Woody Plant Vegetation Structure data sits as the `main_path` variable. 
-
-4. Specify the output directory as the `out_dir` variable.
+We will assume that the working directory is set to the location of the `neon-veg` project.
 
 
 Output
@@ -55,7 +42,7 @@ Output
 
 Run the `main.R` script to generate the following files in the output directory: 
 
-- 	**vst_merged.csv** - data table containing the merged vegetation structure entries based on individual ID
+-	**vst_merged.csv** - data table containing the merged vegetation structure entries based on individual ID
 
 -	**list_tiles.txt** - a list of the 1km x 1km tiles containing woody veg stems, corresponds to the Canopy Height Model and RGB mosaic NEON data products
 
