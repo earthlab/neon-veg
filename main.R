@@ -10,11 +10,7 @@ library(rgeos)
 
 ########################### SETUP ##################################
 
-# set working directory to neon-veg in local environment
-setwd("~/github/neon-veg")
-
-# path to directory containing NEON l1 Woody Vegetation data 
-main_path <- "~/Documents/NEON/SJER/NEON_struct-woody-plant/" 
+main_path <- "SJER/NEON_struct-woody-plant/" 
 
 # specify output directory path and filename of output shapefile to be written
 out_dir <- "output/"
@@ -38,23 +34,23 @@ check_create_dir(out_dir)
 
 # loop through folders of field data with different dates
 dirs <- list.dirs(path = main_path )
-dirs <-dirs[ grepl("NEON.D17.SJER", dirs) ]
+dirs <- dirs[grepl("NEON.D17.SJER", dirs)]
 
 
 first_loop <- 1 # loop counter
-for (woody_path in dirs){
+for (woody_path in dirs) {
   
   # mapping and tagging table (contains stem locations)
   woody_mapping_path <- paste(woody_path, 
                               list.files(path = woody_path, 
                                          pattern = "mappingandtagging"), 
-                              sep="/")
+                              sep = "/")
   
   # apparent individual table (contains height and crown diameter)
   woody_individual_path <- paste(woody_path, 
                                  list.files(path = woody_path, 
                                             pattern = "apparentindividual"), 
-                                 sep="/")
+                                 sep = "/")
   
   # load situ stem locations table; 
   # calculate mapped UTM locations of plants from distance/azimuth
@@ -69,7 +65,7 @@ for (woody_path in dirs){
   woody_vst <- merge_vst_tables(woody_utm, woody_individual)
   
   # combine woody veg structure data to a single data frame 
-  if (first_loop == 1){
+  if (first_loop == 1) {
     woody_all <- woody_vst
     woody_mapping_all <- woody_utm
     woody_individual_all <- woody_individual
@@ -92,7 +88,7 @@ crs <- get_vst_crs(woody_path)
 
 # remove polygons with area < 4 hyperspectral pixels 
 woody_thresh <- apply_area_threshold(woody_all,
-                                     nPix=4)
+                                     nPix = 4)
 
 # remove duplicate entries; keep most recent
 woody_thresh <- woody_thresh %>% 
@@ -103,16 +99,17 @@ woody_thresh <- woody_thresh %>%
 write.csv(woody_thresh, file = paste(out_dir,"vst_merged.csv"))
 
 # create circular polygon for each stem based on maxCanopyDiameter
-woody_polygons <- woody_df_to_shp(df=woody_thresh, 
-                                  coord_ref=crs,
-                                  shrink=1,
+woody_polygons <- woody_df_to_shp(df = woody_thresh, 
+                                  coord_ref = crs,
+                                  shrink = 1,
                                   num_sides = 8,
-                                  shp_filename=paste(out_dir,"polygons",sep=""))
+                                  shp_filename = paste(out_dir,
+                                                       "polygons",
+                                                       sep = ""))
 
 # delete/merge/clip overlapping polygons
 woody_final <- polygon_overlap(woody_polygons,
-                               nPix=4, 
-                               shp_filename=paste(out_dir,"polygons_checked_overlap",sep=""))
-
-# explore distribution of vegetation data 
-
+                               nPix = 4, 
+                               shp_filename = paste(out_dir,
+                                                    "polygons_checked_overlap",
+                                                    sep = ""))
