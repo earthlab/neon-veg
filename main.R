@@ -38,7 +38,7 @@ check_create_dir(out_dir)
 
 # loop through folders of field data with different dates
 dirs <- list.dirs(path = main_path )
-dirs <-dirs[ grepl("NEON.D17.SJER", dirs) ]
+dirs <-dirs[ grepl("NEON.D", dirs) ]
 
 
 first_loop <- 1 # loop counter
