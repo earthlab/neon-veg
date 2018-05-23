@@ -6,14 +6,14 @@ library(swfscMisc)
 library(rgdal)        
 library(dplyr)
 library(rgeos)
-
+library(stringr)
 
 ########################### SETUP ##################################
 
-main_path <- "SJER/NEON_struct-woody-plant/" 
+main_path <- "NIWO/woody_veg" 
 
 # specify output directory path and filename of output shapefile to be written
-out_dir <- "output/"
+out_dir <- "output_NIWO/"
 
 #####################################################################
 
@@ -28,6 +28,7 @@ source("apply_area_threshold.R")
 source("polygon_overlap.R")
 source("get_poly.R")
 source("check_create_dir.R")
+source("make_species_table.R")
 
 # create output directory if it does not exist 
 check_create_dir(out_dir)
@@ -97,6 +98,10 @@ woody_thresh <- woody_thresh %>%
 
 # write to csv
 write.csv(woody_thresh, file = paste(out_dir,"vst_merged.csv"))
+
+# display table of species count in thresholded data frame 
+species_table <- make_species_table(woody_thresh)
+species_table
 
 # create circular polygon for each stem based on maxCanopyDiameter
 woody_polygons <- woody_df_to_shp(df = woody_thresh, 
