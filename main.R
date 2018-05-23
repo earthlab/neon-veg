@@ -13,7 +13,7 @@ library(stringr)
 main_path <- "NIWO/woody_veg" 
 
 # specify output directory path and filename of output shapefile to be written
-out_dir <- "output_NIWO/"
+out_dir <- "output_NIWO_2/"
 
 #####################################################################
 

@@ -21,8 +21,10 @@ locate_woody_veg <- function(df){
   
   
   # use the geoNEON R package to pull geolocation data from the NEON API
-  # get location information for each woody_utm veg entry 
-  woody_utm_loc <- def.extr.geo.os(woody_utm, 'namedLocation')
+  # get location information for each woody_utm veg entry. 
+  # concatenate fields for namedLocation and pointID
+  woody_utm$namedLocationPointID <- paste(woody_utm$namedLocation, woody_utm$pointID, sep=".")
+  woody_utm_loc <- def.extr.geo.os(woody_utm, 'namedLocationPointID')
   
   # get easting/northing of reference point ID
   ref_east <- as.numeric(woody_utm_loc$api.easting)
