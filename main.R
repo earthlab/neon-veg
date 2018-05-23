@@ -103,7 +103,7 @@ write.csv(woody_thresh, file = paste(out_dir,"vst_merged.csv"))
 species_table <- make_species_table(woody_thresh)
 species_table
 
-# create circular polygon for each stem based on maxCanopyDiameter
+# create circular polygon for each stem based on maxCrownDiameter
 woody_polygons <- woody_df_to_shp(df = woody_thresh, 
                                   coord_ref = crs,
                                   shrink = 1,
