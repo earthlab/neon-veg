@@ -10,7 +10,7 @@ library(stringr)
 
 ########################### SETUP ##################################
 
-main_path <- "SJER/woody_veg" 
+main_path <- "NIWO/woody_veg" 
 
 # specify output directory path and filename of output shapefile to be written
 out_dir <- "output/"
@@ -158,7 +158,21 @@ woody_final <- polygon_overlap(woody_polygons,
                                                     "polygons_checked_overlap",
                                                     sep = ""))
 
-# number of trees after applying area threshold
+# write shapefile of mapped stem locations for final polygons 
+stems_final <- as.data.frame(woody_final) %>%
+  rename(uid = individualID)
+idx_ID <- woody_thresh$individualID %in% woody_final$individualID
+stems_final$easting <- woody_thresh$easting[idx_ID]
+stems_final$northing <-  woody_thresh$northing[idx_ID]
+df_to_shp_points(stems_final, 
+                 coord_ref, 
+                 shp_filename = paste(out_dir,
+                                      "mapped_stems_final",
+                                      sep = ""))
+
+
+# number of trees after checking for overlap & 
+# applying area threshold to clipped polygons 
 tree_count <- paste(as.character(nrow(woody_final)),
                     "trees after checking for polygon overlap",
                     sep=" ")

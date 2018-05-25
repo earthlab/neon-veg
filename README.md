@@ -49,7 +49,7 @@ Run the `main.R` script to generate the following files in the output directory:
 
 -	**tree_counts.txt** - number of trees left after each major step in the workflow 
 
-Four shapefiles generated with accompanying attribute (.dbf), shape index (.shx), and projection (.prj) files:
+Five shapefiles generated with accompanying attribute (.dbf), shape index (.shx), and projection (.prj) files:
 
 -	**mapped_stems.shp** - points for every mapped stem in the data set
 
@@ -58,3 +58,5 @@ Four shapefiles generated with accompanying attribute (.dbf), shape index (.shx)
 -   **polygons_filtered.shp** - previous shapefile after applying an area threshold (currently crowns with an estimated area of at least 4 hyperspectral pixels)
 
 -	**polygons_checked_overlap.shp** - previous shapefile after checking polygons for overlap and removing/editing them as necessary
+
+-	***mapped_stems_final.shp** - tree stem points for the final polygons after checking overlap
