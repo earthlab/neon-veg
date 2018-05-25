@@ -47,6 +47,14 @@ Run the `main.R` script to generate the following files in the output directory:
 
 -	**list_tiles.txt** - a list of the 1km x 1km tiles containing woody veg stems, corresponds to the Canopy Height Model and RGB mosaic NEON data products
 
--	**polygons.shp** - polygons generated with accompanying attribute (.dbf), shape index (.shx), and projection (.prj) files
+-	**tree_counts.txt** - number of trees left after each major step in the workflow 
+
+Four shapefiles generated with accompanying attribute (.dbf), shape index (.shx), and projection (.prj) files:
+
+-	**mapped_stems.shp** - points for every mapped stem in the data set
+
+-   **polygons_all.shp** - polygons for all complete entries (trees with mapped stem location, species, height, and crown diameter)
+
+-   **polygons_filtered.shp** - previous shapefile after applying an area threshold (currently crowns with an estimated area of at least 4 hyperspectral pixels)
 
 -	**polygons_checked_overlap.shp** - previous shapefile after checking polygons for overlap and removing/editing them as necessary
