@@ -26,10 +26,11 @@ locate_woody_veg <- function(df){
   woody_utm$namedLocationPointID <- paste(woody_utm$namedLocation, woody_utm$pointID, sep=".")
   woody_utm_loc <- def.extr.geo.os(woody_utm, 'namedLocationPointID')
   
+  
   # get easting/northing of reference point ID
   ref_east <- as.numeric(woody_utm_loc$api.easting)
   ref_north <- as.numeric(woody_utm_loc$api.northing)
-  theta <- woody_utm_loc$stemAzimuth * pi
+  theta <- (woody_utm_loc$stemAzimuth * pi) / 180
   
   # calculate easting and northing for each plant
   # add new columns to the woody_utm veg data frame 
