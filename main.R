@@ -13,7 +13,7 @@ library(stringr)
 main_path <- "NIWO/woody_veg" 
 
 # specify output directory path and filename of output shapefile to be written
-out_dir <- "output_NIWO_2/"
+out_dir <- "output/"
 
 #####################################################################
 
@@ -29,6 +29,7 @@ source("polygon_overlap.R")
 source("get_poly.R")
 source("check_create_dir.R")
 source("make_species_table.R")
+source("df_to_shp_points.R")
 
 # create output directory if it does not exist 
 check_create_dir(out_dir)
@@ -79,37 +80,75 @@ for (woody_path in dirs) {
   }
 }
 
+# create text file to keep track of the number of trees after each step
+count_file <- file(paste(out_dir,"tree_counts.txt", sep=""), "w")
+
+# number of trees with mapped locations 
+tree_count <- paste(as.character(nrow(woody_mapping_all)),
+                    "trees with mapped locations",
+                    sep=" ")
+write(tree_count, count_file, append=TRUE)
 
 # list the 1km x 1km tiles containing field data
 tiles <- list_tiles_with_plants(woody_all, out_dir)
 
 # create coordinate reference system object based on
 # UTM zone info in the "vst_plotperyear" table
-crs <- get_vst_crs(woody_path)
+coord_ref <- get_vst_crs(woody_path)
 
-# remove polygons with area < 4 hyperspectral pixels 
-woody_thresh <- apply_area_threshold(woody_all,
-                                     nPix = 4)
+# write shapefile with points for every mapped stem 
+df_to_shp_points(woody_mapping_all, 
+                 coord_ref, 
+                 shp_filename = paste(out_dir,
+                                      "mapped_stems",
+                                      sep = ""))
 
 # remove duplicate entries; keep most recent
-woody_thresh <- woody_thresh %>% 
+woody_no_duplicates <- woody_all %>% 
   group_by(individualID) %>%
   slice(which.max(as.Date(date)))
 
-# write to csv
-write.csv(woody_thresh, file = paste(out_dir,"vst_merged.csv"))
+# number of trees with complete entries, no duplicates 
+# (location, species, height, crown diam)
+tree_count <- paste(as.character(nrow(woody_no_duplicates)),
+                    "trees with complete entries",
+                    sep=" ")
+write(tree_count, count_file, append=TRUE)
+
+# write merged entries to csv
+write.csv(woody_no_duplicates, file = paste(out_dir,"vst_merged.csv"))
+
+# before applying area threshold, create polygon shapefile
+# for all complete entries 
+woody_df_to_shp(df = woody_no_duplicates, 
+                     coord_ref = coord_ref,
+                     shrink = 1,
+                     num_sides = 8,
+                     shp_filename = paste(out_dir,
+                                           "polygons_all",
+                                           sep = ""))
+
+# remove polygons with area < 4 hyperspectral pixels 
+woody_thresh <- apply_area_threshold(woody_no_duplicates,
+                                     nPix = 4)
+
+# number of trees after applying area threshold
+tree_count <- paste(as.character(nrow(woody_thresh)),
+                    "trees after applying area threshold",
+                    sep=" ")
+write(tree_count, count_file, append=TRUE)
 
 # display table of species count in thresholded data frame 
 species_table <- make_species_table(woody_thresh)
 species_table
 
-# create circular polygon for each stem based on maxCrownDiameter
+# create circular polygon for each stem based on max crown diameter
 woody_polygons <- woody_df_to_shp(df = woody_thresh, 
-                                  coord_ref = crs,
+                                  coord_ref = coord_ref,
                                   shrink = 1,
                                   num_sides = 8,
                                   shp_filename = paste(out_dir,
-                                                       "polygons",
+                                                       "polygons_filtered",
                                                        sep = ""))
 
 # delete/merge/clip overlapping polygons
@@ -118,3 +157,13 @@ woody_final <- polygon_overlap(woody_polygons,
                                shp_filename = paste(out_dir,
                                                     "polygons_checked_overlap",
                                                     sep = ""))
+
+# number of trees after applying area threshold
+tree_count <- paste(as.character(nrow(woody_final)),
+                    "trees after checking for polygon overlap",
+                    sep=" ")
+write(tree_count, count_file, append=TRUE)
+
+# close file keeping track of tree counts
+close(count_file)
+

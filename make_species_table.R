@@ -16,7 +16,7 @@ make_species_table <- function(df){
     mutate(sciNameShort = word(scientificName, 1, 2)) %>% 
     group_by(taxonID, sciNameShort) %>% 
     summarise(total = n()) %>%
-    select(total, taxonID, sciNameShort)
+    dplyr::select(total, taxonID, sciNameShort)
   
   return(species_table)
 }
