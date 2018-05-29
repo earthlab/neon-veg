@@ -19,7 +19,7 @@ df_to_shp_points = function(df, coord_ref, shp_filename){
   
   # select columns of interest
   stem_locations <- df %>%
-    dplyr::select(easting, northing, uid, scientificName, taxonID)
+    dplyr::select(easting, northing, individualID, scientificName, taxonID)
   
   # assign UTM coordinates to create SpatialPointsDataFrame
   coordinates(stem_locations) <- ~easting+northing

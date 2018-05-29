@@ -10,7 +10,7 @@ library(stringr)
 
 ########################### SETUP ##################################
 
-main_path <- "NIWO/woody_veg" 
+main_path <- "SJER/woody_veg" 
 
 # specify output directory path and filename of output shapefile to be written
 out_dir <- "output/"
@@ -159,8 +159,7 @@ woody_final <- polygon_overlap(woody_polygons,
                                                     sep = ""))
 
 # write shapefile of mapped stem locations for final polygons 
-stems_final <- as.data.frame(woody_final) %>%
-  rename(uid = individualID)
+stems_final <- as.data.frame(woody_final) 
 idx_ID <- woody_thresh$individualID %in% woody_final$individualID
 stems_final$easting <- woody_thresh$easting[idx_ID]
 stems_final$northing <-  woody_thresh$northing[idx_ID]
