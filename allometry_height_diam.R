@@ -7,11 +7,12 @@ allometry_height_diam <- function(df){
   
  # libraries: ggplot2, tidyr, purrr, dplyr, broom 
   
-
+  
   # nest the data by taxon ID: 
   # create separate list of data for each species
   by_taxonID <- stems_final %>% 
     group_by(taxonID) %>% 
+    filter(n() > 1) %>% 
     nest()
   
   # function to calculate linear model of crownDiam 
@@ -23,7 +24,7 @@ allometry_height_diam <- function(df){
   # for each species data set, calculate linear model
   models <- by_taxonID %>% 
     mutate(
-      model = map(data, taxon_model)
+      model = data %>% map(taxon_model)
     )
   
   # compute summary, r-squared, parameters, and observation statistics 
