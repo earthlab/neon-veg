@@ -7,10 +7,16 @@ library(rgdal)
 library(dplyr)
 library(rgeos)
 library(stringr)
+library(ggplot2) 
+library(tidyr)
+library(dplyr)
+library(purrr)
+library(broom)
+
 
 ########################### SETUP ##################################
 
-main_path <- "SJER/woody_veg" 
+main_path <- "NIWO/woody_veg" 
 
 # specify output directory path and filename of output shapefile to be written
 out_dir <- "output/"
@@ -30,6 +36,8 @@ source("get_poly.R")
 source("check_create_dir.R")
 source("make_species_table.R")
 source("df_to_shp_points.R")
+source("apply_height_threshold.R")
+source("allometry_height_diam.R")
 
 # create output directory if it does not exist 
 check_create_dir(out_dir)
@@ -179,4 +187,7 @@ write(tree_count, count_file, append=TRUE)
 
 # close file keeping track of tree counts
 close(count_file)
+
+# construct height-crown diameter allometry for each species
+allometries <- allometry_height_diam(stems_final)
 
