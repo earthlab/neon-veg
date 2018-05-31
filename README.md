@@ -2,6 +2,7 @@ neon-veg
 ================
 
 A collection of R code to create crown polygons based on field-based NEON Woody Vegetation Structure data.
+A circular polygon is created for each sample with a mapped tree stem location, species, height, and crown diameter. 
 
 
 Installation
@@ -19,8 +20,13 @@ To run the workflow, you'll need the following R packages:
 -	dplyr
 -	rgeos
 -	stringr
+-	ggplot2
+-	tidyr
+-	dplyr
+-	purrr
+-	broom
 
-Individual tree stems are recorded using distance and azimuth from a subplot reference point. To derive stem location in UTM coordinates, pull geolocation data for the sampling plots using the [geoNEON](https://github.com/NEONScience/NEON-geolocation/tree/master/geoNEON)  package.
+Individual tree stems are recorded using distance and azimuth from a subplot reference point. To derive stem location in UTM coordinates, pull geolocation data for the sampling plots using the [geoNEON](https://github.com/NEONScience/NEON-geolocation/tree/master/geoNEON) package.
 
 To install the geoNEON package: 
 
