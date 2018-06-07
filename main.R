@@ -126,6 +126,8 @@ write(tree_count, count_file, append=TRUE)
 # write merged entries to csv
 write.csv(woody_no_duplicates, file = paste(out_dir,"vst_merged.csv"))
 
+
+
 # before applying area threshold, create polygon shapefile
 # for all complete entries 
 woody_df_to_shp(df = woody_no_duplicates, 
@@ -154,7 +156,7 @@ species_table
 woody_polygons <- woody_df_to_shp(df = woody_thresh, 
                                   coord_ref = coord_ref,
                                   shrink = 1,
-                                  num_sides = 8,
+                                  num_sides = 24,
                                   shp_filename = paste(out_dir,
                                                        "polygons_filtered",
                                                        sep = ""))
