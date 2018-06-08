@@ -16,7 +16,7 @@ library(broom)
 
 ########################### SETUP ##################################
 
-main_path <- "NIWO/woody_veg" 
+main_path <- "SJER/woody_veg" 
 
 # specify output directory path and filename of output shapefile to be written
 out_dir <- "output/"
