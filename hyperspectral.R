@@ -71,11 +71,11 @@ data.ignore <- refl.info$Data_Ignore_Value
 refl[refl == data.ignore] <- NA 
 refl <- refl / scale.factor
 
-# plot RGB composite ----------------------------------------------------
 
+# plot single band  -------------------------------------------------------
 
 # Convert from array to matrix
-refl.plot <- refl[1,,]
+refl.plot <- refl[band,,]
 # create raster and assign CRS
 refl.plot <- raster(refl.plot,
                     crs=crs.info$Proj4)
@@ -86,10 +86,22 @@ refl.plot <- t(refl.plot)
 # plot 
 image(log(refl.plot), main="Transposed image")
 
+# plot RGB composite ----------------------------------------------------
+# specify indices of the chosen red, green, and blue bands to display 
+band.idx.r <- 49 # ~ 620 nm
+band.idx.g <- 35 # ~ 555nm
+band.idx.b <- 15 # ~ 450 nm
+
+# create a function to process each band, create raster stack, plotRGB 
 
 
 
-# clip using polygon ------------------------------------------------------
+# clip using tree stem location points ------------------------------------
+
+
+
+
+# clip using polygons ------------------------------------------------------
 # adapt the Python tutorial here? http://neondataskills.org/HDF5/neon-aop-hdf5-py 
 # or this one http://neondataskills.org/HDF5/Plot-Hyperspectral-Pixel-Spectral-Profile-In-R/
 
