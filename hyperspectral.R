@@ -91,7 +91,7 @@ image(log(refl.plot), main="Transposed image")
 
 # clip using polygon ------------------------------------------------------
 # adapt the Python tutorial here? http://neondataskills.org/HDF5/neon-aop-hdf5-py 
-
+# or this one http://neondataskills.org/HDF5/Plot-Hyperspectral-Pixel-Spectral-Profile-In-R/
 
 
 
