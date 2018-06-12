@@ -8,9 +8,13 @@
 # biocLite("rhdf5")
 
 # r Load `raster` and `rhdf5` packages and read NIS data into R
-library(raster)
 library(rhdf5)
 library(rgdal)
+library(raster)
+
+# load custom functions
+source("get_hs_band.R")
+
 
 # Define the file name to be opened
 f <- '~/github/neon-veg/NIWO/hyperspectral_reflectance/NEON_D13_NIWO_DP3_450000_4432000_reflectance.h5'
@@ -53,7 +57,7 @@ y.max <- as.numeric(map.info[5])
 # calculate the maximum X and minimum Y values 
 x.max <- (x.min + (n.cols*res.x))
 y.min <- (y.max - (n.rows*res.y))
-ext <- extent(x.min, x.max, y.min, y.max)
+tile.extent <- extent(x.min, x.max, y.min, y.max)
 
 # read reflectance data
 # 1 band
@@ -72,25 +76,22 @@ refl[refl == data.ignore] <- NA
 refl <- refl / scale.factor
 
 
-# plot single band  -------------------------------------------------------
+# plot single band based on wavelength  -------------------------------------------------------
 
-# Convert from array to matrix
-refl.plot <- refl[band,,]
-# create raster and assign CRS
-refl.plot <- raster(refl.plot,
-                    crs=crs.info$Proj4)
-# assign extent to raster
-extent(refl.plot) <- ext
-# transpose x and y values for proper orientation in plot 
-refl.plot <- t(refl.plot)
-# plot 
-image(log(refl.plot), main="Transposed image")
+# specify wavelength
+wl <- 669
+get_hs_band(refl, 
+            wl,
+            crs.info$Proj4,
+            tile.extent)
+
+source("get_hs_band.R")
 
 # plot RGB composite ----------------------------------------------------
 # specify indices of the chosen red, green, and blue bands to display 
-band.idx.r <- 49 # ~ 620 nm
-band.idx.g <- 35 # ~ 555nm
-band.idx.b <- 15 # ~ 450 nm
+bands <- c(669, 549, 474) 
+plot_hs_rgb(refl, bands)
+
 
 # create a function to process each band, create raster stack, plotRGB 
 
