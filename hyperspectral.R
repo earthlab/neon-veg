@@ -139,15 +139,25 @@ library(rgdal)
 polygons <- rgdal::readOGR(dsn = polygon.path,
                            layer = "polygons_checked_overlap")
 
+# read the tree locations 
+tree.points <- rgdal::readOGR(dsn = polygon.path,
+                                 layer = "mapped_stems_final")
+
 # use a plot boundary instead of tile extent 
 clip.extent <- round(extent(c(451365.27,  # xmin
               451405.39,  # xmax
               4432738.62, # ymin
               4432778.74))) # ymax
 
-# convert to SF object
+# convert polyogns to SF object
 library(sf)
 polygons.sf <- st_as_sf(polygons)
+
+# convert tree locations to SF object
+tree.points.sf <- st_as_sf(tree.points) 
+tree.coords <- tree.points.sf %>% st_coordinates() %>% as.data.frame()
+tree.points.sf$X <- tree.coords$X
+tree.points.sf$Y <- tree.coords$Y
 
 # add empty columns for the min and max coordinates 
 polygons.sf$xmin <- NA 
@@ -156,18 +166,26 @@ polygons.sf$ymin <- NA
 polygons.sf$ymax <- NA 
 
 # add the min, max X and Y values to each polygon for filtering 
-for (i in 1:nrow(polygons)) {
+for (i in 1:nrow(polygons.sf)) {
   polygons.sf$xmin[i] <- as.numeric(st_bbox(polygons.sf$geometry[i])[1])
   polygons.sf$ymin[i] <- as.numeric(st_bbox(polygons.sf$geometry[i])[2])
   polygons.sf$xmax[i] <- as.numeric(st_bbox(polygons.sf$geometry[i])[3])
   polygons.sf$ymax[i] <- as.numeric(st_bbox(polygons.sf$geometry[i])[4])
 }
 
+# merge the polygons with tree locations;
+# rename the geometry columns to be more descriptive 
+polygons.points <- merge(as.data.frame(polygons.sf),
+                            as.data.frame(tree.points.sf)[,c("indvdID", "X","Y","geometry")],
+                            by="indvdID") %>% 
+  dplyr::rename(geometry.polygon = geometry.x, 
+                geometry.point = geometry.y)
+           
 # filter the polygons, keep only the ones inside the current tile 
-polygons.in <- polygons.sf %>% filter(xmin > clip.extent@xmin & 
-                                      xmax < clip.extent@xmax & 
-                                      ymin > clip.extent@ymin & 
-                                      ymax < clip.extent@ymax)
+polygons.in <- polygons.points %>% filter(xmin > clip.extent@xmin & 
+                                          xmax < clip.extent@xmax & 
+                                          ymin > clip.extent@ymin & 
+                                          ymax < clip.extent@ymax)
 
 # converted PYTHON to R: https://www.neonscience.org/neon-aop-hdf5-py 
 # We will load the function calc_clip_index, which reads in a dictionary of 
@@ -201,6 +219,7 @@ refl.clipped <- refl.scaled[, subset.index['xMin']:subset.index['xMax'],
                             subset.index['yMin']:subset.index['yMax']]
 
 
+
 # plot the subset image RGB composite
 plot_hs_rgb(refl = refl.clipped, 
             wavelengths = wavelengths,
@@ -208,6 +227,30 @@ plot_hs_rgb(refl = refl.clipped,
             proj4 = crs.info$Proj4, 
             ext = clip.extent,
             plt=TRUE)
+
+
+
+# clip raster for single point
+# how to calculate the point index within the image???!?!?!?!?!?!?!??!!??!!??!?!?!?
+i <- 1
+point.index = {}
+h5rows = full.extent@ymax - full.extent@ymin
+point.index$x <- round(polygons.in$X[i] - full.extent@xmin)
+point.index$y <- round(h5rows - (polygons.in$Y[i] - full.extent@ymin))
+point.index
+  
+
+
+refl.pixel <- raster::extract(x = raster(refl.clipped),
+                              y = polygons.points[1,c("X","Y")])
+
+
+
+
+
+
+
+# clip raster for single polygon 
 
 
 
