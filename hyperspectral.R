@@ -330,7 +330,6 @@ colnames(spectra) <- polygons.in$indvdID
 spectra <- cbind(wavelength = round(wavelengths), spectra)
 
 
-
 # reorganize so reflectance data is in a single column 
 spectra.gather <- tidyr::gather(spectra, 
                                 key = "indvdID",
@@ -339,7 +338,7 @@ spectra.gather <- tidyr::gather(spectra,
 
 # add species information for each tree 
 spectra.gather <- merge(x = spectra.gather, 
-                     y = polygons.in[ ,c("indvdID","scntfcN")],
+                     y = polygons.in[ ,c("indvdID","scntfcN","X","Y")],
                      by = "indvdID") %>% 
   as.data.frame() %>% 
   dplyr::select(indvdID, scntfcN, everything())
@@ -353,10 +352,29 @@ ggplot(data = spectra.gather, aes(x = wavelength, y = reflectance, colour = scnt
   labs(x = "wavelength (nm)", color = "species") + 
   ggtitle("Hyperspectral reflectance extracted per center pixel")
 
+# write extracted spectral reflectance profiles to file 
+out.dir <- "NIWO/output/spectra/"
+write.csv(spectra.gather, file = paste0(out.dir,"spectral_reflectance_",
+                                        as.character(full.extent@xmin),"_",
+                                        as.character(full.extent@xmax),".csv"))
+
+
+# loop through h5 files ---------------------------------------------------
+
+
+
+
 
 
 
 # extract spectra within each polygon -------------------------------------
+
+# get image indices of the pixels within each polygon
+
+
+
+
+
 
 # adapt the Python tutorial here? http://neondataskills.org/HDF5/neon-aop-hdf5-py 
 # or this one http://neondataskills.org/HDF5/Plot-Hyperspectral-Pixel-Spectral-Profile-In-R/
