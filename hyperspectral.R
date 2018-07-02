@@ -13,6 +13,7 @@ library(rgdal)
 library(raster)
 library(ggplot2)
 library(tidyr)
+library(sf)
 
 # set working directory
 setwd("~/github/neon-veg/")
@@ -132,9 +133,7 @@ ggplot(data=spectrum, aes(x=wavelength, y = refl)) +
 
 
 
-# clip using tree stem location points ------------------------------------
-
-# test for a single polygon; plot RGB 
+# read & combine tree polygon/point geometries --------------------------------
 
 # polygon shapefiles to read
 polygon.path <- "NIWO/output/"
@@ -147,14 +146,7 @@ polygons <- rgdal::readOGR(dsn = polygon.path,
 tree.points <- rgdal::readOGR(dsn = polygon.path,
                                  layer = "mapped_stems_final")
 
-# use a plot boundary instead of tile extent 
-clip.extent <- round(extent(c(451365.27,  # xmin
-              451405.39,  # xmax
-              4432738.62, # ymin
-              4432778.74))) # ymax
-
-# convert polyogns to SF object
-library(sf)
+# convert polygons to SF object
 polygons.sf <- sf::st_as_sf(polygons)
 
 # convert tree locations to SF object
@@ -186,12 +178,15 @@ polygons.points <- merge(as.data.frame(polygons.sf),
                             by="indvdID") %>% 
   dplyr::rename(geometry.polygon = geometry.x, 
                 geometry.point = geometry.y)
-           
-# filter the polygons, keep only the ones inside the current tile 
-polygons.in <- polygons.points %>% dplyr::filter(xmin > clip.extent@xmin & 
-                                          xmax < clip.extent@xmax & 
-                                          ymin > clip.extent@ymin & 
-                                          ymax < clip.extent@ymax)
+
+
+# subset reflectance image ----------------------------------------------------
+
+# use a plot boundary instead of tile extent 
+clip.extent <- round(extent(c(451365.27,    # xmin
+                              451405.39,    # xmax
+                              4432738.62,   # ymin
+                              4432778.74))) # ymax
 
 # converted PYTHON to R: https://www.neonscience.org/neon-aop-hdf5-py 
 # We will load the function calc_clip_index, which reads in a dictionary of 
@@ -220,7 +215,7 @@ subset.index = calc_clip_index(clip.extent,
                                tile.extent)
 subset.index
 
-# subset the reflectance array 
+# subset the reflectance array for only the plot of interest
 refl.clipped <- refl.scaled[, subset.index['xMin']:subset.index['xMax'],
                             subset.index['yMin']:subset.index['yMax']]
 
@@ -234,12 +229,23 @@ rgb_ras <- plot_hs_rgb(refl = refl.clipped,
             ext = clip.extent,
             plt=TRUE)
 
-# add the tree locations onto the RGB image
+
+# filter polygons within plot -------------------------------------------------
+
+# filter the polygons, keep only the ones inside the current region
+polygons.in <- polygons.points %>% dplyr::filter(xmin > clip.extent@xmin & 
+                                                   xmax < clip.extent@xmax & 
+                                                   ymin > clip.extent@ymin & 
+                                                   ymax < clip.extent@ymax)
+
+
+# plot the tree locations onto the RGB image
+# use the point locations, draw a circle with size based on crown diameter
 plotRGB(rgb_ras,
         r = 1, g = 2, b = 3,
         stretch = "lin",
         axes = TRUE,
-        main="RGB Image",
+        main="RGB Composite with Tree Locations",
         cex.main=2,
         addfun = points(polygons.in$X, 
                         polygons.in$Y, 
@@ -248,11 +254,11 @@ plotRGB(rgb_ras,
                         col = "white"))
 
 
+# get RGB reflectance for center points --------------------------------------
+
 # clip raster for single point
-# get the index of the pixel in the image 
 polygons.in[c('R', 'G', 'B')] <- raster::extract(x = rgb_ras,
                                                  y = cbind(polygons.in$X, polygons.in$Y))
-  
 
 # combine the data into a data frame to plot the spectral reflectances 
 rgb.spectra.plotting <- polygons.in %>% 
@@ -283,37 +289,78 @@ ggplot(data = refl.gather, aes(x = wavelength, y = reflectance, colour = scntfcN
   geom_line(aes(group = indvdID)) 
 
 
+# get 426-band reflectance for center point ----------------------------------
 
-# how to calculate the point index within the image???!?!?!?!?!?!?!??!!??!!??!?!?!?
-# to select ALL bands, not just RGB from the raster brick
+# need to convert each band into a raster before you can stack them....
+# so instead I will get the image indices for each pixel that 
+# corresponds to the tree locations just as the NEON code above calculates the 
+# indices for a rectangular subset region 
 
+# get coordinates for points in image space (rows, cols) from full tile
 i <- 1
-point.index = {}
-h5rows = full.extent@ymax - full.extent@ymin
-point.index$x <- round(polygons.in$X[i] - full.extent@xmin)
-point.index$y <- round(h5rows - (polygons.in$Y[i] - full.extent@ymin))
-point.index
+index.x <- round(polygons.in$X[i] - full.extent@xmin)
+index.y <- round(polygons.in$Y[i] - full.extent@ymin)
+pixel.refl <- refl.scaled[,index.x, index.y]
 
-
-refl.pixel <- raster::extract(x = raster(refl.clipped),
-                              y = polygons.points[1,c("X","Y")])
-
-
-
-
+spectrum <- cbind.data.frame(wavelength = wavelengths, 
+                             refl = pixel.refl)
+ggplot(data=spectrum, aes(x=wavelength, y = refl)) + 
+  geom_line() + 
+  labs(x = "Wavelength (nm)", y = "Reflectance") + 
+  ggtitle("Spectral reflectance")
 
 
 
-# clip raster for single polygon 
+# 426-band reflectance for series of points  ------------------------------
+
+spectra <- data.frame(matrix(NA, nrow = dim(wavelengths), ncol = nrow(polygons.in)))
+
+for (i in 1:nrow(polygons.in)){
+  index.x <- round(polygons.in$X[i] - full.extent@xmin)
+  index.y <- round(polygons.in$Y[i] - full.extent@ymin)
+
+  spectra[,i] <- refl.scaled[,index.x, index.y]
+  
+}
+
+# name each column by the individual ID of each tree 
+colnames(spectra) <- polygons.in$indvdID
+
+# add wavelengths to data frame 
+spectra <- cbind(wavelength = round(wavelengths), spectra)
+
+
+
+# reorganize so reflectance data is in a single column 
+spectra.gather <- tidyr::gather(spectra, 
+                                key = "indvdID",
+                                value = "reflectance",
+                                -wavelength) 
+
+# add species information for each tree 
+spectra.gather <- merge(x = spectra.gather, 
+                     y = polygons.in[ ,c("indvdID","scntfcN")],
+                     by = "indvdID") %>% 
+  as.data.frame() %>% 
+  dplyr::select(indvdID, scntfcN, everything())
+
+# look at the first rows of this data frame 
+head(spectra.gather)
+
+# plot all reflectance spectra; color by species  
+ggplot(data = spectra.gather, aes(x = wavelength, y = reflectance, colour = scntfcN)) +
+  geom_line(aes(group = indvdID)) + 
+  labs(x = "wavelength (nm)", color = "species") + 
+  ggtitle("Hyperspectral reflectance extracted per center pixel")
 
 
 
 
-# clip using polygons ------------------------------------------------------
+# extract spectra within each polygon -------------------------------------
+
 # adapt the Python tutorial here? http://neondataskills.org/HDF5/neon-aop-hdf5-py 
 # or this one http://neondataskills.org/HDF5/Plot-Hyperspectral-Pixel-Spectral-Profile-In-R/
 
 
 
-# display spectra ---------------------------------------------------------
 
