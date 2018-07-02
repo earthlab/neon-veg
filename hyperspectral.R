@@ -25,17 +25,21 @@ source("plot_hs_rgb.R")
 f <- '~/github/neon-veg/NIWO/hyperspectral_reflectance/NEON_D13_NIWO_DP3_451000_4432000_reflectance.h5'
 
 # look at the HDF5 file structure 
-h5.struct <- h5ls(f,
+h5.struct <- rhdf5::h5ls(f,
                   all=T)
 
 # read coordinate reference data
-crs.info <- h5read(f, 
+crs.info <- rhdf5::h5read(f, 
                    "NIWO/Reflectance/Metadata/Coordinate_System")
+
 # convert "UTM" to lowercase "utm" for proper usage later
 crs.info$Proj4 <- chartr("UTM", "utm", crs.info$Proj4)
 
+# print the coordinate reference data
+crs.info
+
 # get attributes for the Reflectance dataset
-refl.info <- h5readAttributes(f,
+refl.info <- rhdf5::h5readAttributes(f,
                               "NIWO/Reflectance/Reflectance_Data")
 
 # resolution --> the Dimension Labels are "Line, Sample, Wavelength"
@@ -55,7 +59,7 @@ print(paste0("# Bands: ", as.character(n.bands)))
 
 
 # wavelengths 
-wavelengths <- h5read(f,
+wavelengths <- rhdf5::h5read(f,
                       "NIWO/Reflectance/Metadata/Spectral_Data/Wavelength")
 
 # define spatial extent: extract resolution and origin coordinates
@@ -68,15 +72,15 @@ y.max <- as.numeric(map.info[5])
 # calculate the maximum X and minimum Y values 
 x.max <- (x.min + (n.cols*res.x))
 y.min <- (y.max - (n.rows*res.y))
-tile.extent <- extent(x.min, x.max, y.min, y.max)
+tile.extent <- raster::extent(x.min, x.max, y.min, y.max)
 
 # read reflectance data
 # 1 band
 band = 1 
-refl <- h5read(f,"/NIWO/Reflectance/Reflectance_Data",
+refl <- rhdf5::h5read(f,"/NIWO/Reflectance/Reflectance_Data",
                  index = list(band, 1:n.cols, 1:n.rows))
 # all bands
-refl <- h5read(f,"/NIWO/Reflectance/Reflectance_Data",
+refl <- rhdf5::h5read(f,"/NIWO/Reflectance/Reflectance_Data",
                 index = list(1:n.bands, 1:n.cols, 1:n.rows)) 
 
 # view and apply scale factor to convert integer values to reflectance [0,1]
@@ -113,12 +117,12 @@ plot_hs_rgb(refl.scaled,
 # plot reflectance spectra ------------------------------------------------
 
 # select x,y pixel  
-x <- 1
-y <- 3
+x <- 300
+y <- 860
 b <- 1:n.bands
 
 spectrum <- cbind.data.frame(wavelength = wavelengths, 
-                             refl = refl[x,y,b])
+                             refl = refl.scaled[x,y,b])
 
 ggplot(data=spectrum, aes(x=wavelength, y = refl)) + 
     geom_line() + 
@@ -135,7 +139,6 @@ ggplot(data=spectrum, aes(x=wavelength, y = refl)) +
 polygon.path <- "NIWO/output/"
 
 # read polygon file 
-library(rgdal)
 polygons <- rgdal::readOGR(dsn = polygon.path,
                            layer = "polygons_checked_overlap")
 
@@ -151,11 +154,13 @@ clip.extent <- round(extent(c(451365.27,  # xmin
 
 # convert polyogns to SF object
 library(sf)
-polygons.sf <- st_as_sf(polygons)
+polygons.sf <- sf::st_as_sf(polygons)
 
 # convert tree locations to SF object
-tree.points.sf <- st_as_sf(tree.points) 
-tree.coords <- tree.points.sf %>% st_coordinates() %>% as.data.frame()
+tree.points.sf <- sf::st_as_sf(tree.points) 
+tree.coords <- tree.points.sf %>% 
+  sf::st_coordinates() %>% 
+  as.data.frame()
 tree.points.sf$X <- tree.coords$X
 tree.points.sf$Y <- tree.coords$Y
 
@@ -167,10 +172,10 @@ polygons.sf$ymax <- NA
 
 # add the min, max X and Y values to each polygon for filtering 
 for (i in 1:nrow(polygons.sf)) {
-  polygons.sf$xmin[i] <- as.numeric(st_bbox(polygons.sf$geometry[i])[1])
-  polygons.sf$ymin[i] <- as.numeric(st_bbox(polygons.sf$geometry[i])[2])
-  polygons.sf$xmax[i] <- as.numeric(st_bbox(polygons.sf$geometry[i])[3])
-  polygons.sf$ymax[i] <- as.numeric(st_bbox(polygons.sf$geometry[i])[4])
+  polygons.sf$xmin[i] <- as.numeric(sf::st_bbox(polygons.sf$geometry[i])[1])
+  polygons.sf$ymin[i] <- as.numeric(sf::st_bbox(polygons.sf$geometry[i])[2])
+  polygons.sf$xmax[i] <- as.numeric(sf::st_bbox(polygons.sf$geometry[i])[3])
+  polygons.sf$ymax[i] <- as.numeric(sf::st_bbox(polygons.sf$geometry[i])[4])
 }
 
 # merge the polygons with tree locations;
@@ -182,7 +187,7 @@ polygons.points <- merge(as.data.frame(polygons.sf),
                 geometry.point = geometry.y)
            
 # filter the polygons, keep only the ones inside the current tile 
-polygons.in <- polygons.points %>% filter(xmin > clip.extent@xmin & 
+polygons.in <- polygons.points %>% dplyr::filter(xmin > clip.extent@xmin & 
                                           xmax < clip.extent@xmax & 
                                           ymin > clip.extent@ymin & 
                                           ymax < clip.extent@ymax)
@@ -231,6 +236,10 @@ plot_hs_rgb(refl = refl.clipped,
 
 
 # clip raster for single point
+# get the index of the pixel in the image 
+
+
+
 # how to calculate the point index within the image???!?!?!?!?!?!?!??!!??!!??!?!?!?
 i <- 1
 point.index = {}
@@ -238,7 +247,6 @@ h5rows = full.extent@ymax - full.extent@ymin
 point.index$x <- round(polygons.in$X[i] - full.extent@xmin)
 point.index$y <- round(h5rows - (polygons.in$Y[i] - full.extent@ymin))
 point.index
-  
 
 
 refl.pixel <- raster::extract(x = raster(refl.clipped),

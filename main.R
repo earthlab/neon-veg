@@ -16,7 +16,7 @@ library(broom)
 
 ########################### SETUP ##################################
 
-main_path <- "SJER/woody_veg" 
+main_path <- "NIWO/woody_veg" 
 
 # specify output directory path and filename of output shapefile to be written
 out_dir <- "output/"
@@ -161,7 +161,7 @@ woody_polygons <- woody_df_to_shp(df = woody_thresh,
                                                        "polygons_filtered",
                                                        sep = ""))
 
-# delete/merge/clip overlapping polygons
+# delete/clip overlapping polygons
 woody_final <- polygon_overlap(woody_polygons,
                                nPix = 4, 
                                shp_filename = paste(out_dir,
@@ -169,10 +169,10 @@ woody_final <- polygon_overlap(woody_polygons,
                                                     sep = ""))
 
 # write shapefile of mapped stem locations for final polygons 
+# get the easting and northing tree coordinates from woody_thresh data frame
 stems_final <- as.data.frame(woody_final) 
-idx_ID <- woody_thresh$individualID %in% woody_final$individualID
-stems_final$easting <- woody_thresh$easting[idx_ID]
-stems_final$northing <-  woody_thresh$northing[idx_ID]
+stems_coordinates <- woody_thresh %>% dplyr::select(individualID, easting, northing)
+stems_final <- merge(stems_final, stems_coordinates, by = "individualID")
 df_to_shp_points(stems_final, 
                  coord_ref, 
                  shp_filename = paste(out_dir,

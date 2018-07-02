@@ -24,26 +24,26 @@ get_hs_band <- function(refl, wavelengths, wl, proj4, ext, plt=FALSE){
   print(dim(refl))
   refl.plot <- refl[wl.idx,,]
   
+  # transpose x and y values for proper orientation in plot 
+  refl.t <- t(refl.plot)
+  
   # create raster and assign CRS
-  refl.ras <- raster(refl.plot,
-                    crs = proj4)
+  refl.ras <- raster(refl.t,
+                     crs = proj4)
   
   # assign UTM extent to raster
   extent(refl.ras) <- ext
   
-  # transpose x and y values for proper orientation in plot 
-  refl.t <- t(refl.ras)
-  
   # plot 
   if (plt == TRUE){
-    image(log(refl.t), 
+    image(log(refl.ras), 
           main= paste("Band",
                       as.character(wl),
                       "nm",
                       sep= " "))
   }
   
-  return(refl.t)
+  return(refl.ras)
   
   
 }
