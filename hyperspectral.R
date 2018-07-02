@@ -12,6 +12,7 @@ library(rhdf5)
 library(rgdal)
 library(raster)
 library(ggplot2)
+library(tidyr)
 
 # set working directory
 setwd("~/github/neon-veg/")
@@ -226,21 +227,66 @@ refl.clipped <- refl.scaled[, subset.index['xMin']:subset.index['xMax'],
 
 
 # plot the subset image RGB composite
-plot_hs_rgb(refl = refl.clipped, 
+rgb_ras <- plot_hs_rgb(refl = refl.clipped, 
             wavelengths = wavelengths,
             rgb.bands = rgb.bands, 
             proj4 = crs.info$Proj4, 
             ext = clip.extent,
             plt=TRUE)
 
+# add the tree locations onto the RGB image
+plotRGB(rgb_ras,
+        r = 1, g = 2, b = 3,
+        stretch = "lin",
+        axes = TRUE,
+        main="RGB Image",
+        cex.main=2,
+        addfun = points(polygons.in$X, 
+                        polygons.in$Y, 
+                        pch = 1, 
+                        cex = polygons.in$crownDm, 
+                        col = "white"))
 
 
 # clip raster for single point
 # get the index of the pixel in the image 
+polygons.in[c('R', 'G', 'B')] <- raster::extract(x = rgb_ras,
+                                                 y = cbind(polygons.in$X, polygons.in$Y))
+  
+
+# combine the data into a data frame to plot the spectral reflectances 
+rgb.spectra.plotting <- polygons.in %>% 
+  dplyr::select(indvdID, R, G, B) %>% 
+  as.data.frame()
+
+refl.gather <- tidyr::gather(rgb.spectra.plotting, 
+                      key = "band",
+                      value = "reflectance",
+                      -indvdID) 
+
+# add species information for each tree 
+refl.gather <- merge(x = refl.gather, 
+                             y = polygons.in[ ,c("indvdID","scntfcN")],
+                             by = "indvdID") %>% 
+  as.data.frame() %>% 
+  dplyr::select(indvdID, scntfcN, everything())
+
+# add wavelength values 
+wavelength.lut <- as.data.frame(cbind(band = c('R','G','B'), wavelengths = rgb.bands)) 
+refl.gather$wavelength <- wavelength.lut$wavelengths[match(refl.gather$band, wavelength.lut$band)]
+
+# look at the first rows of this data frame 
+head(refl.gather)
+
+# plot the reflectance spectra 
+ggplot(data = refl.gather, aes(x = wavelength, y = reflectance, colour = scntfcN)) +
+  geom_line(aes(group = indvdID)) 
 
 
 
 # how to calculate the point index within the image???!?!?!?!?!?!?!??!!??!!??!?!?!?
+# to select ALL bands, not just RGB from the raster brick
+
 i <- 1
 point.index = {}
 h5rows = full.extent@ymax - full.extent@ymin

@@ -43,7 +43,7 @@ plot_hs_rgb <- function(refl, wavelengths, rgb.bands, proj4, ext, plt=FALSE){
           r = 1, g = 2, b = 3,
           stretch = "lin",
           axes = TRUE,
-          main="RGB Image",
+          main="RGB Composite",
           cex.main=2)
   }
   
