@@ -361,6 +361,61 @@ write.csv(spectra.gather, file = paste0(out.dir,"spectral_reflectance_",
 
 # loop through h5 files ---------------------------------------------------
 
+# directory with hyperspectral .h5 files
+h5.dir <- '~/github/neon-veg/NIWO/hyperspectral_reflectance/'
+
+# get the names of all h5 files to iterate through
+h5.list <- list.files(path = h5.dir, full.names = TRUE)
+h5.list <- h5.list[grepl("*.h5", h5.list)]
+
+# loop through h5 files 
+for (h5 in h5.list) {
+  
+  # list the contents of the HDF5 file
+  h5.struct <- rhdf5::h5ls(h5, all=T)
+  
+  # construct the string using "/Reflectance/Metadata/Coordinate_System",
+  # without explicitly using a site code 
+  crs.tag <- h5.struct$group[grepl("/Reflectance/Metadata/Coordinate_System", 
+                                   h5.struct$group)][1] 
+  
+  # read coordinate reference system data
+  crs.info <- rhdf5::h5read(h5, crs.tag)
+  
+  # convert "UTM" to lowercase "utm" for proper usage later
+  crs.info$Proj4 <- chartr("UTM", "utm", crs.info$Proj4)
+  
+  # print the coordinate reference data
+  crs.info
+  
+  # get attributes for the Reflectance dataset.
+  # construct the string using /Reflectance/Reflectance_Data 
+  refl.tag <- paste0(h5.struct$group[grepl("/Reflectance", 
+                                           h5.struct$group)][1],
+                     "/Reflectance_Data")
+  
+  refl.info <- rhdf5::h5readAttributes(h5,refl.tag)
+  
+  n.rows <- refl.info$Dimensions[1]
+  n.cols <- refl.info$Dimensions[2]
+  n.bands <- refl.info$Dimensions[3]
+  
+  # print dimensions 
+  print(paste0("# Rows: ", as.character(n.rows)))
+  print(paste0("# Columns: ", as.character(n.cols)))
+  print(paste0("# Bands: ", as.character(n.bands)))
+  
+  # read the wavelengths of the hyperspectral image bands
+  wavelength.tag <- paste0(h5.struct$group[grepl("/Reflectance/Metadata/Spectral_Data", 
+                                                 h5.struct$group)][1],
+                           "/Wavelength")
+  wavelengths <- rhdf5::h5read(h5,
+                               wavelength.tag)
+  
+  
+  
+}
+
 
 
 
