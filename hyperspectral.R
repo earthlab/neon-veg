@@ -14,6 +14,7 @@ library(raster)
 library(ggplot2)
 library(tidyr)
 library(sf)
+library(dplyr)
 
 # set working directory
 setwd("~/github/neon-veg/")
@@ -361,6 +362,59 @@ write.csv(spectra.gather, file = paste0(out.dir,"spectral_reflectance_",
 
 # loop through h5 files ---------------------------------------------------
 
+# read the polygon/points data 
+site <- "NIWO"
+polygon.path <- paste0(site,"/output/")
+
+# read polygon file 
+polygons <- rgdal::readOGR(dsn = polygon.path,
+                           layer = "polygons_checked_overlap")
+
+# read the tree locations 
+tree.points <- rgdal::readOGR(dsn = polygon.path,
+                              layer = "mapped_stems_final")
+
+# convert polygons and tree locations to SF objects
+polygons.sf <- sf::st_as_sf(polygons)
+tree.points.sf <- sf::st_as_sf(tree.points) 
+
+# isolate the tree location coordinates 
+tree.coords <- tree.points.sf %>% 
+  sf::st_coordinates() %>% 
+  as.data.frame()
+
+# add new columns for the tree location coordinates 
+tree.points.sf$X <- tree.coords$X
+tree.points.sf$Y <- tree.coords$Y
+
+# add empty columns for the min and max coordinates for each polygon
+polygons.sf$xmin <- NA 
+polygons.sf$xmax <- NA 
+polygons.sf$ymin <- NA 
+polygons.sf$ymax <- NA 
+
+# add the min, max X and Y values to each polygon for filtering 
+for (i in 1:nrow(polygons.sf)) {
+  polygons.sf$xmin[i] <- as.numeric(sf::st_bbox(polygons.sf$geometry[i])[1])
+  polygons.sf$ymin[i] <- as.numeric(sf::st_bbox(polygons.sf$geometry[i])[2])
+  polygons.sf$xmax[i] <- as.numeric(sf::st_bbox(polygons.sf$geometry[i])[3])
+  polygons.sf$ymax[i] <- as.numeric(sf::st_bbox(polygons.sf$geometry[i])[4])
+}
+
+# merge the polygons with tree locations;
+# rename the geometry columns to be more descriptive 
+polygons.points <- merge(as.data.frame(polygons.sf),
+                         as.data.frame(tree.points.sf)
+                         [,c("indvdID", "X","Y","geometry")],
+                         by="indvdID") %>% 
+  dplyr::rename(geometry.polygon = geometry.x, 
+                geometry.point = geometry.y)
+
+
+
+# specify red, green, and blue wavelengths for RGB composite
+rgb.bands <- c(669, 549, 474) 
+
 # directory with hyperspectral .h5 files
 h5.dir <- '~/github/neon-veg/NIWO/hyperspectral_reflectance/'
 
@@ -411,6 +465,109 @@ for (h5 in h5.list) {
                            "/Wavelength")
   wavelengths <- rhdf5::h5read(h5,
                                wavelength.tag)
+  
+  # define spatial extent: extract resolution and origin coordinates
+  map.info <- unlist(strsplit(crs.info$Map_Info, 
+                              split = ", "))
+  res.x <- as.numeric(map.info[6])
+  res.y <- as.numeric(map.info[7])
+  x.min <- as.numeric(map.info[4])
+  y.max <- as.numeric(map.info[5])
+  
+  # calculate the maximum X and minimum Y values 
+  x.max <- (x.min + (n.cols*res.x))
+  y.min <- (y.max - (n.rows*res.y))
+  tile.extent <- raster::extent(x.min, x.max, y.min, y.max)
+  
+  print("tile extent: ")
+  tile.extent
+  
+  # read reflectance data for all bands
+  refl <- rhdf5::h5read(h5,refl.tag,
+                        index = list(1:n.bands, 1:n.cols, 1:n.rows))
+  
+  # view and apply scale factor to convert integer values to reflectance [0,1]
+  # and data ignore value
+  scale.factor <- refl.info$Scale_Factor
+  data.ignore <- refl.info$Data_Ignore_Value
+  refl[refl == data.ignore] <- NA 
+  refl.scaled <- refl / scale.factor
+  
+  # plot RGB composite 
+  plot_hs_rgb(refl.scaled, 
+              wavelengths,
+              rgb.bands, 
+              crs.info$Proj4, 
+              tile.extent,
+              plt=TRUE)
+  
+  # figure out which trees are within the current tile 
+  polygons.in <- polygons.points %>% 
+    dplyr::filter(xmin > tile.extent@xmin & 
+                  xmax < tile.extent@xmax & 
+                  ymin > tile.extent@ymin & 
+                  ymax < tile.extent@ymax)
+  
+  # extract hyperspectral reflectance at each tree location 
+  spectra <- data.frame(matrix(NA, 
+                               nrow = dim(wavelengths), 
+                               ncol = nrow(polygons.in)))
+  
+  for (i in 1:nrow(polygons.in)){
+    # get the image coordinates of each tree location
+    index.x <- round(polygons.in$X[i] - tile.extent@xmin)
+    index.y <- round(polygons.in$Y[i] - tile.extent@ymin)
+    # extract the spectra 
+    spectra[,i] <- refl.scaled[,index.x, index.y]
+  }
+  
+  # name each column by the individual ID of each tree 
+  colnames(spectra) <- polygons.in$indvdID
+  
+  # add wavelengths to data frame 
+  spectra <- cbind(wavelength = round(wavelengths), spectra)
+  
+  
+  # reorganize so reflectance data is in a single column 
+  spectra.gather <- tidyr::gather(spectra, 
+                                  key = "indvdID",
+                                  value = "reflectance",
+                                  -wavelength) 
+  
+  # add species information for each tree 
+  spectra.gather <- merge(x = spectra.gather, 
+                          y = polygons.in[ ,c("indvdID","scntfcN","X","Y")],
+                          by = "indvdID") %>% 
+    as.data.frame() %>% 
+    dplyr::select(indvdID, scntfcN, everything())
+  
+  # look at the first rows of this data frame 
+  head(spectra.gather)
+  
+  # plot all reflectance spectra; color by species  
+  ggplot(data = spectra.gather, aes(x = wavelength, y = reflectance, colour = scntfcN)) +
+    geom_line(aes(group = indvdID)) + 
+    labs(x = "wavelength (nm)", color = "species") + 
+    ggtitle("Hyperspectral reflectance extracted per center pixel")
+  
+  # write extracted spectral reflectance profiles to file 
+  spectra.info <- spectra.gather %>% 
+    group_by(indvdID, scntfcN, X, Y)
+
+  
+  spectra.write <- cbind(spectra.info[1,], t(spectra.gather$reflectance))
+  
+  spectra.gather
+  test <- spectra.write %>% 
+    select(reflectance) %>%
+    t() %>% 
+    
+  
+  
+  out.dir <- paste0(site,"/output/spectra/")
+  write.csv(spectra.gather, file = paste0(out.dir,"spectral_reflectance_",
+                                          as.character(full.extent@xmin),"_",
+                                          as.character(full.extent@xmax),".csv"))  
   
   
   
