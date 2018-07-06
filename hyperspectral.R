@@ -15,6 +15,7 @@ library(ggplot2)
 library(tidyr)
 library(sf)
 library(dplyr)
+library(data.table) 
 
 # set working directory
 setwd("~/github/neon-veg/")
@@ -425,6 +426,8 @@ h5.list <- h5.list[grepl("*.h5", h5.list)]
 # loop through h5 files 
 for (h5 in h5.list) {
   
+  print(h5)
+  
   # list the contents of the HDF5 file
   h5.struct <- rhdf5::h5ls(h5, all=T)
   
@@ -521,6 +524,26 @@ for (h5 in h5.list) {
     spectra[,i] <- refl.scaled[,index.x, index.y]
   }
   
+  # format the spectra for writing to file 
+  spectra.write <- data.frame(individualID = polygons.in$indvdID,
+                              scientificName = polygons.in$scntfcN,
+                              X = polygons.in$X,
+                              Y = polygons.in$Y,
+                              t(spectra))
+  names(spectra.write[, -(1:4)]) <- round(wavelengths)
+  
+  
+  data.table::setnames(spectra.write, 
+                       old = colnames(spectra.write[,-(1:4)]), 
+                       new = as.character(round(wavelengths)))
+  
+  out.dir <- paste0(site,"/output/spectra/")
+  write.csv(spectra.write, file = paste0(out.dir,"spectral_reflectance_",
+                                          as.character(tile.extent@xmin),"_",
+                                          as.character(tile.extent@xmax),".csv"))  
+  
+  ## spectra for plotting with ggplot 
+  
   # name each column by the individual ID of each tree 
   colnames(spectra) <- polygons.in$indvdID
   
@@ -549,27 +572,6 @@ for (h5 in h5.list) {
     geom_line(aes(group = indvdID)) + 
     labs(x = "wavelength (nm)", color = "species") + 
     ggtitle("Hyperspectral reflectance extracted per center pixel")
-  
-  # write extracted spectral reflectance profiles to file 
-  spectra.info <- spectra.gather %>% 
-    group_by(indvdID, scntfcN, X, Y)
-
-  
-  spectra.write <- cbind(spectra.info[1,], t(spectra.gather$reflectance))
-  
-  spectra.gather
-  test <- spectra.write %>% 
-    select(reflectance) %>%
-    t() %>% 
-    
-  
-  
-  out.dir <- paste0(site,"/output/spectra/")
-  write.csv(spectra.gather, file = paste0(out.dir,"spectral_reflectance_",
-                                          as.character(full.extent@xmin),"_",
-                                          as.character(full.extent@xmax),".csv"))  
-  
-  
   
 }
 

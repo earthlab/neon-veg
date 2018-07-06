@@ -21,8 +21,6 @@ get_hs_band <- function(refl, wavelengths, wl, proj4, ext, plt=FALSE){
   wl.idx <- which.min(abs(wavelengths - wl))
   
   # extract reflectance data for the wavelength. convert array to matrix 
-  print ("dimensions of input image: ")
-  print(dim(refl))
   refl.plot <- refl[wl.idx,,]
   
   # transpose x and y values for proper orientation in plot 
