@@ -234,6 +234,9 @@ for (i in 1:length(csvs)){
   }
 }
 
+# remove the unneccessary column 
+spectra.all <- spectra.all %>% select(-X.1)
+
 # write ALL the spectra to a single file 
 write.csv(spectra.all,
           file=paste0(out.dir,site, "_spectral_reflectance_ALL.csv"))
