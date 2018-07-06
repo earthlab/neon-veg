@@ -584,51 +584,69 @@ write.csv(spectra.all,
 
 # Plot spectra and color line by species ----------------------------------
 
+# keep just the reflectance values along with individual ID and species
+# for the first tree
+spectra.1 <- spectra.all[1,2:ncol(spectra.all)] %>% select(-c(X,Y))
+
+# organize the data into a data frame where the first column contains
+# the individual ID, second column contains scientific name, 
+# third column contains wavelength, and fourth column contains
+# reflectance per wavelength.  
+spectra.plot <- tidyr::gather(spectra.1,
+                              key = wavelength,
+                              value = "reflectance",
+                              -individualID,
+                              -scientificName)
+# add the actual wavelenth values into the wavelengths column
+spectra.plot$wavelength <- wavelengths
 
 
-
-
-# plot spectra with ggplot ------------------------------------------------
-
-## spectra for plotting with ggplot 
-
-# name each column by the individual ID of each tree 
-colnames(spectra) <- polygons.in$indvdID
-
-# add wavelengths to data frame 
-spectra <- cbind(wavelength = round(wavelengths), spectra)
-
-
-# reorganize so reflectance data is in a single column 
-spectra.gather <- tidyr::gather(spectra, 
-                                key = "indvdID",
+for (i in 2:nrow(spectra.all)){
+  spectra.current <- spectra.all[i,2:ncol(spectra.all)] %>% select(-c(X,Y))
+  spectra.current <- tidyr::gather(spectra.current,
+                                key = wavelength,
                                 value = "reflectance",
-                                -wavelength) 
+                                -individualID,
+                                -scientificName)
+  spectra.current$wavelength <- wavelengths
+  
+  spectra.plot <- rbind(spectra.plot, spectra.current)
+  
+}
 
-# add species information for each tree 
-spectra.gather <- merge(x = spectra.gather, 
-                        y = polygons.in[ ,c("indvdID","scntfcN","X","Y")],
-                        by = "indvdID") %>% 
-  as.data.frame() %>% 
-  dplyr::select(indvdID, scntfcN, everything())
+# remove the first reflectance value 
+spectra.plot <- spectra.plot[spectra.plot$wavelength > 385,]
 
-# look at the first rows of this data frame 
-head(spectra.gather)
+# legend labels - use taxon codes since they are shorter 
+legend.labels <- c("ABLAL", "PIEN", "PIFL2", "PICOL")
 
-# plot all reflectance spectra; color by species  
-ggplot(data = spectra.gather, aes(x = wavelength, y = reflectance, colour = scntfcN)) +
-  geom_line(aes(group = indvdID)) + 
+
+# plot all spectra on single plot 
+ggplot(data = spectra.plot, aes(x = wavelength, y = reflectance, colour = scientificName)) +
+  geom_line(aes(group = individualID)) + 
   labs(x = "wavelength (nm)", color = "species") + 
-  ggtitle("Hyperspectral reflectance extracted per center pixel")
+  ggtitle("Hyperspectral reflectance extracted per center pixel") + 
+  scale_color_manual(labels = legend.labels, 
+                     values = c("#d7191c", "#fdae61", "#abdda4", "#2b83ba"))
 
+
+# Use facet_grid for a separate plot per species 
+ggplot(data = spectra.plot, aes(x = wavelength, y = reflectance, colour = scientificName)) +
+  geom_line(aes(group = individualID), alpha = 0.5) + 
+  facet_wrap(. ~ scientificName, ncol = 2) + 
+  labs(x = "wavelength (nm)", color = "species") + 
+  ggtitle("Hyperspectral reflectance extracted per center pixel") + 
+  scale_color_manual(labels = legend.labels, 
+                     values = c("#d7191c", "#fdae61", "#abdda4", "#2b83ba"))
+
+
+ 
 
 
 
 # extract spectra within each polygon -------------------------------------
 
 # get image indices of the pixels within each polygon
-
-
 
 
 
