@@ -361,6 +361,12 @@ write.csv(spectra.gather, file = paste0(out.dir,"spectral_reflectance_",
                                         as.character(full.extent@xmax),".csv"))
 
 
+
+
+
+
+
+
 # loop through h5 files ---------------------------------------------------
 
 # read the polygon/points data 
@@ -485,6 +491,21 @@ for (h5 in h5.list) {
   print("tile extent: ")
   tile.extent
   
+  # figure out which trees are within the current tile 
+  polygons.in <- polygons.points %>% 
+    dplyr::filter(xmin > tile.extent@xmin & 
+                    xmax < tile.extent@xmax & 
+                    ymin > tile.extent@ymin & 
+                    ymax < tile.extent@ymax)
+  
+  print(paste0(as.character(nrow(polygons.in))," polygons in current tile"))
+  
+  # if no polygons are within the current tile, skip to the next one
+  if (nrow(polygons.in)==0){
+    print("no trees located within current tile")
+    next
+  }
+  
   # read reflectance data for all bands
   refl <- rhdf5::h5read(h5,refl.tag,
                         index = list(1:n.bands, 1:n.cols, 1:n.rows))
@@ -497,19 +518,12 @@ for (h5 in h5.list) {
   refl.scaled <- refl / scale.factor
   
   # plot RGB composite 
-  plot_hs_rgb(refl.scaled, 
-              wavelengths,
-              rgb.bands, 
-              crs.info$Proj4, 
-              tile.extent,
-              plt=TRUE)
-  
-  # figure out which trees are within the current tile 
-  polygons.in <- polygons.points %>% 
-    dplyr::filter(xmin > tile.extent@xmin & 
-                  xmax < tile.extent@xmax & 
-                  ymin > tile.extent@ymin & 
-                  ymax < tile.extent@ymax)
+  # plot_hs_rgb(refl.scaled, 
+  #             wavelengths,
+  #             rgb.bands, 
+  #             crs.info$Proj4, 
+  #             tile.extent,
+  #             plt=TRUE)
   
   # extract hyperspectral reflectance at each tree location 
   spectra <- data.frame(matrix(NA, 
@@ -540,43 +554,72 @@ for (h5 in h5.list) {
   out.dir <- paste0(site,"/output/spectra/")
   write.csv(spectra.write, file = paste0(out.dir,"spectral_reflectance_",
                                           as.character(tile.extent@xmin),"_",
-                                          as.character(tile.extent@xmax),".csv"))  
-  
-  ## spectra for plotting with ggplot 
-  
-  # name each column by the individual ID of each tree 
-  colnames(spectra) <- polygons.in$indvdID
-  
-  # add wavelengths to data frame 
-  spectra <- cbind(wavelength = round(wavelengths), spectra)
-  
-  
-  # reorganize so reflectance data is in a single column 
-  spectra.gather <- tidyr::gather(spectra, 
-                                  key = "indvdID",
-                                  value = "reflectance",
-                                  -wavelength) 
-  
-  # add species information for each tree 
-  spectra.gather <- merge(x = spectra.gather, 
-                          y = polygons.in[ ,c("indvdID","scntfcN","X","Y")],
-                          by = "indvdID") %>% 
-    as.data.frame() %>% 
-    dplyr::select(indvdID, scntfcN, everything())
-  
-  # look at the first rows of this data frame 
-  head(spectra.gather)
-  
-  # plot all reflectance spectra; color by species  
-  ggplot(data = spectra.gather, aes(x = wavelength, y = reflectance, colour = scntfcN)) +
-    geom_line(aes(group = indvdID)) + 
-    labs(x = "wavelength (nm)", color = "species") + 
-    ggtitle("Hyperspectral reflectance extracted per center pixel")
-  
+                                          as.character(tile.extent@ymin),".csv"))  
 }
 
 
 
+# read and plot the spectra .csv files  -----------------------------------
+
+spectra.dir <- paste0(site,"/output/spectra/")
+csvs <- list.files(spectra.dir, full.names = TRUE)
+csvs <- csvs[grepl("*000.csv", csvs)]
+
+for (i in 1:length(csvs)){
+  print(csvs[i])
+  csv <- read.csv(csvs[i])
+  
+  if(i==1){
+    spectra.all <- csv
+  } else {
+    spectra.all <- rbind(spectra.all, csv)
+  }
+}
+
+# write ALL the spectra to a single file 
+write.csv(spectra.all,
+          file=paste0(out.dir,site, "_spectral_reflectance_ALL.csv"))
+
+
+
+# Plot spectra and color line by species ----------------------------------
+
+
+
+
+
+# plot spectra with ggplot ------------------------------------------------
+
+## spectra for plotting with ggplot 
+
+# name each column by the individual ID of each tree 
+colnames(spectra) <- polygons.in$indvdID
+
+# add wavelengths to data frame 
+spectra <- cbind(wavelength = round(wavelengths), spectra)
+
+
+# reorganize so reflectance data is in a single column 
+spectra.gather <- tidyr::gather(spectra, 
+                                key = "indvdID",
+                                value = "reflectance",
+                                -wavelength) 
+
+# add species information for each tree 
+spectra.gather <- merge(x = spectra.gather, 
+                        y = polygons.in[ ,c("indvdID","scntfcN","X","Y")],
+                        by = "indvdID") %>% 
+  as.data.frame() %>% 
+  dplyr::select(indvdID, scntfcN, everything())
+
+# look at the first rows of this data frame 
+head(spectra.gather)
+
+# plot all reflectance spectra; color by species  
+ggplot(data = spectra.gather, aes(x = wavelength, y = reflectance, colour = scntfcN)) +
+  geom_line(aes(group = indvdID)) + 
+  labs(x = "wavelength (nm)", color = "species") + 
+  ggtitle("Hyperspectral reflectance extracted per center pixel")
 
 
 
