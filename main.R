@@ -1,7 +1,7 @@
 # load packages 
 library(devtools)
 library(geoNEON)
-library (neonDataStackR)
+library(neonUtilities)
 library(sp)           
 library(swfscMisc)    
 library(rgdal)        
@@ -45,7 +45,7 @@ woody_veg_filename = paste0(data_dir, 'woody_veg/NEON_struct-woody-plant.zip')
 # use the stackByTable function to unzip the woody veg structure data and 
 # combine the data into a single series of data tables. 
 # "dpID" is the Data Product ID; use 'DP1.10098.001' for woody veg structure. 
-neonDataStackR::stackByTable(dpID = 'DP1.10098.001',
+neonUtilities::stackByTable(dpID = 'DP1.10098.001',
                              filepath = woody_veg_filename)
 
 

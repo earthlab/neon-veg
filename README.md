@@ -12,8 +12,9 @@ Installation
 
 To run the workflow, you'll need the following R packages:
 
-- devtools
+-   devtools
 -	geoNEON
+-   neonUtilities
 -	sp
 -	swfscMisc
 -	rgdal
@@ -26,6 +27,14 @@ To run the workflow, you'll need the following R packages:
 -	purrr
 -	broom
 
+The Woody Vegetation Structure data product is delivered in a series of data tables. The "mapping and tagging" table contains tree stem locations. The "apparent individual" table contains structural measurements of individual plants. Multiple folders of each kind of data table exist at each NEON site. To combine these data into a single set of data tables, NEON provides the *stackByTable* function within the [neonUtilities](https://github.com/NEONScience/NEON-utilities/tree/master/neonUtilities) package.
+
+To install the neonUtilities package: 
+
+''' r
+devtools::sinstall_github("NEONScience/NEON-utilities/neonDataStackR", dependencies=TRUE)
+'''
+
 Individual tree stems are recorded using distance and azimuth from a subplot reference point. To derive stem location in UTM coordinates, pull geolocation data for the sampling plots using the [geoNEON](https://github.com/NEONScience/NEON-geolocation/tree/master/geoNEON) package.
 
 To install the geoNEON package: 
@@ -34,10 +43,16 @@ To install the geoNEON package:
 devtools::install_github('NEONScience/NEON-geolocation/geoNEON', dependencies=TRUE)
 ```
 
+
 Setup
 ================
 
-1. Download the Woody Plant Vegetation Structure data. If you downloaded it as a .zip file, be sure to unzip the contents into the directory for this project before proceeding (e.g., `neon-veg/SJER/`). 
+1. Download the Woody Plant Vegetation Structure data. 
+2. Place the zipped data into a data directory with the following format: 
+
+
+
+If you downloaded it as a .zip file, be sure to unzip the contents into the directory for this project before proceeding (e.g., `neon-veg/SJER/`). 
 
 *For a site with multiple dates of field data collection, there should be a series of folders with the collection date included in their names. Inside each folder, there are a series of Excel data tables including **vst_apparentindividual**, **vst_mappingandtagging**, and **vst_plotperyear**, which contain crown structure measurements, stem locations + species, and projection information, respectively. For more information, consult the [NEON User Guide to Woody Plant Vegetation Structure](http://data.neonscience.org/api/v0/documents/NEON_vegStructure_userGuide_vA).* 
 
