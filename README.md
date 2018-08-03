@@ -47,7 +47,7 @@ devtools::install_github('NEONScience/NEON-geolocation/geoNEON', dependencies=TR
 Setup
 ================
 
-1. Download the Woody Plant Vegetation Structure data for your site and time period of interest. When downloaded from the [NEON Data Portal](http://data.neonscience.org/home), this data product is named **"NEON_struct-woody-plant.zip"** by default. 
+1. Download the Woody Plant Vegetation Structure data for your site and time period of interest. When downloaded from the [NEON Data Portal](http://data.neonscience.org/home), this data product is named **"NEON_struct-woody-plant.zip"** by default (as of 08/03/18). 
 2. Navigate to the location of the `neon-veg` project on your computer. 
 3. Place the .zip veg structure data file inside the `neon-veg/data/` directory. 
 4. Open the `main.R` script and edit the `data_path` and `out_dir` variables to reflect your file organization: 
