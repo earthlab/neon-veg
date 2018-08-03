@@ -47,12 +47,12 @@ devtools::install_github('NEONScience/NEON-geolocation/geoNEON', dependencies=TR
 Setup
 ================
 
-1. Navigate to your `neon-veg` project directory. 
-2. Create a folder there to contain the NEON data. Cosider naming it using the site code (such as "NIWO" for the Niwot Ridge Mountain Research Station). This will be your `data_dir`. 
-3. Inside the `data_dir`, create a folder called "woody-veg" to hold the Woody Plant Vegetation Structure data. 
-4. Download the Woody Plant Vegetation Structure data. **Make sure the zip file is named "NEON_struct-woody-plant.zip"**
-5. Place this zipped data into the `woody-veg` directory that you created. Its path should have the following format: "NIWO/woody-veg/NEON_struct-woody-plant.zip"
-6. Open the `main.R` script and edit the `data_dir` and `out_dir` variables. `out_dir` is where the output files will be written. 
+1. Download the Woody Plant Vegetation Structure data. This data product from the [NEON Data Portal](http://data.neonscience.org/home) is named **"NEON_struct-woody-plant.zip"** by default. 
+2. Navigate to your `neon-veg` project directory. 
+3. Place the zipped veg structure data file inside the `neon-veg/data/` directory. 
+4. Open the `main.R` script and edit the `data_path` and `out_dir` variables: 
+-   `data_path` is the path and filename of the vegetation structure input data. Its default value is *"data/NEON_struct-woody-plant.zip"*
+-   `out_dir` is where the output files will be written. 
 
 We will assume that the working directory is set to the location of the `neon-veg` project.
 
