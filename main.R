@@ -91,8 +91,8 @@ for (woody_path in dirs) {
 # create text file to keep track of the number of trees after each step
 count_file <- file(paste(out_dir,"tree_counts.txt", sep=""), "w")
 
-# number of trees with mapped locations 
-tree_count <- paste(as.character(nrow(woody_mapping_all)),
+# number of unique tree ID's with mapped locations 
+tree_count <- paste(as.character(length(unique(woody_mapping_all$individualID))),
                     "trees with mapped locations",
                     sep=" ")
 write(tree_count, count_file, append=TRUE)
@@ -118,7 +118,7 @@ woody_no_duplicates <- woody_all %>%
 
 # number of trees with complete entries, no duplicates 
 # (location, species, height, crown diam)
-tree_count <- paste(as.character(nrow(woody_no_duplicates)),
+tree_count <- paste(as.character(length(unique(woody_no_duplicates$individualID))),
                     "trees with complete entries",
                     sep=" ")
 write(tree_count, count_file, append=TRUE)
@@ -143,7 +143,7 @@ woody_thresh <- apply_area_threshold(woody_no_duplicates,
                                      nPix = 4)
 
 # number of trees after applying area threshold
-tree_count <- paste(as.character(nrow(woody_thresh)),
+tree_count <- paste(as.character(length(unique(woody_thresh$individualID))),
                     "trees after applying area threshold",
                     sep=" ")
 write(tree_count, count_file, append=TRUE)
@@ -182,7 +182,7 @@ df_to_shp_points(stems_final,
 
 # number of trees after checking for overlap & 
 # applying area threshold to clipped polygons 
-tree_count <- paste(as.character(nrow(woody_final)),
+tree_count <- paste(as.character(length(unique(woody_final$individualID))),
                     "trees after checking for polygon overlap",
                     sep=" ")
 write(tree_count, count_file, append=TRUE)
