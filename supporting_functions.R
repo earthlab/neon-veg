@@ -633,3 +633,15 @@ allometry_height_diam <- function(df){
   
 }
 
+remove_duplicates <- function(df){
+  # This function checks for duplicate individualID 
+  # values and keeps only the most recent entry
+  
+  df_no_duplicates <- df %>% 
+    group_by(individualID) %>%
+    slice(which.max(as.Date(date)))
+  
+  return(df_no_duplicates)
+  
+}
+
