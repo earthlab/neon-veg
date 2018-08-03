@@ -23,21 +23,8 @@ out_dir <- "output/"
 
 #####################################################################
 
-
-# load local functions written in external R files. 
-source("locate_woody_veg.R")
-source("woody_df_to_shp.R")
-source("merge_vst_tables.R")
-source("get_vst_crs.R")
-source("list_tiles_with_plants.R")
-source("apply_area_threshold.R")
-source("polygon_overlap.R")
-source("get_poly.R")
-source("check_create_dir.R")
-source("make_species_table.R")
-source("df_to_shp_points.R")
-source("apply_height_threshold.R")
-source("allometry_height_diam.R")
+# load local external functions 
+source("supporting_functions.R")
 
 # create output directory if it does not exist 
 check_create_dir(out_dir)
