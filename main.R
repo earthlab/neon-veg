@@ -17,8 +17,8 @@ library(broom)
 
 ########################### SETUP ##################################
 
-# specify the directory containing NEON data.
-data_dir <- "NIWO/" 
+# path to NEON Woody Plant Vegetation Structure zip file 
+data_path <- "data/NEON_struct-woody-plant.zip" 
 
 # specify output directory path and filename of output shapefile to be written
 out_dir <- "output/"
@@ -39,21 +39,16 @@ count_file <- file(paste(out_dir,"tree_counts.txt", sep=""), "w")
 # read & pre-process woody veg structure data -----------------------------
 
 
-# define the path to the zipped woody veg data
-woody_veg_filename = paste0(data_dir, 'woody_veg/NEON_struct-woody-plant.zip')
-
 # use the stackByTable function to unzip the woody veg structure data and 
 # combine the data into a single series of data tables. 
 # "dpID" is the Data Product ID; use 'DP1.10098.001' for woody veg structure. 
 neonUtilities::stackByTable(dpID = 'DP1.10098.001',
-                             filepath = woody_veg_filename)
+                            filepath = data_path)
 
 
 # read the mappingandtagging data table
-woody_mapping_all = read.csv(paste0(data_dir,
-                                    'woody_veg/',
-                                    'NEON_struct-woody-plant/',
-                                    'stackedFiles/',
+woody_mapping_all = read.csv(paste0(tools::file_path_sans_ext(data_path),
+                                    '/stackedFiles/',
                                     'vst_mappingandtagging.csv'))
 
 # remove any duplicate individualID entries; keep most recent 
@@ -78,11 +73,9 @@ write(tree_count, count_file, append=TRUE)
 
 
 # read the apparentindividual data table (contains height and crown diameter)
-woody_individual_all = read.csv(paste0(data_dir,
-                                    'woody_veg/',
-                                    'NEON_struct-woody-plant/',
-                                    'stackedFiles/',
-                                    'vst_apparentindividual.csv'))
+woody_individual_all = read.csv(paste0(tools::file_path_sans_ext(data_path),
+                                       '/stackedFiles/',
+                                       'vst_apparentindividual.csv'))
 
 # remove any duplicate individalID entries; keep most recent 
 woody_individual <- remove_duplicates(woody_individual_all)
@@ -122,10 +115,8 @@ tiles <- list_tiles_with_plants(woody_utm, out_dir)
 
 # create coordinate reference system object based on
 # UTM zone info in the "vst_plotperyear" data table
-coord_ref <- get_vst_crs(paste0(data_dir,
-                                'woody_veg/',
-                                'NEON_struct-woody-plant/',
-                                'stackedFiles/'))
+coord_ref <- get_vst_crs(paste0(tools::file_path_sans_ext(data_path),
+                                '/stackedFiles/'))
 
 
 
