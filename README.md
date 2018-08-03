@@ -35,7 +35,7 @@ To install the neonUtilities package:
 devtools::sinstall_github("NEONScience/NEON-utilities/neonDataStackR", dependencies=TRUE)
 ```
 
-Individual tree stems are recorded using distance and azimuth from a subplot reference point. To derive stem location in UTM coordinates, pull geolocation data for the sampling plots using the [geoNEON](https://github.com/NEONScience/NEON-geolocation/tree/master/geoNEON) package.
+Individual tree stems are recorded using distance and azimuth from a subplot reference point. To derive stem location in UTM coordinates, pull geolocation data for the sampling plots by querying the NEON API using the [geoNEON](https://github.com/NEONScience/NEON-geolocation/tree/master/geoNEON) package.
 
 To install the geoNEON package: 
 
