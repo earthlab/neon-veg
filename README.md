@@ -2,7 +2,7 @@ neon-veg
 ================
 
 A collection of R code to create crown polygons based on field-based NEON Woody Vegetation Structure data.
-A circular polygon is created for each sample with a mapped tree stem location, species, height, and crown diameter. 
+A circular polygon is created for each tree with a mapped stem location, height, and crown diameter. 
 
 
 Installation
@@ -27,7 +27,7 @@ To run the workflow, you'll need the following R packages:
 -	purrr
 -	broom
 
-The Woody Vegetation Structure data product is delivered in a series of data tables. The "mapping and tagging" table contains tree stem locations. The "apparent individual" table contains structural measurements of individual plants. Multiple folders of each kind of data table exist at each NEON site. To combine these data into a single set of data tables, NEON provides the *stackByTable* function within the [neonUtilities](https://github.com/NEONScience/NEON-utilities/tree/master/neonUtilities) package.
+The Woody Vegetation Structure data product is delivered in a series of data tables. The "mapping and tagging" table contains tree stem locations. The "apparent individual" table contains structural measurements of individual plants. The "plot per year" data table contains useful information about that year's sampling. For more information about these data, consult the [NEON User Guide to Woody Plant Vegetation Structure](http://data.neonscience.org/api/v0/documents/NEON_vegStructure_userGuide_vA). For a NEON site with multiple dates of field data collection, a series of data tables is generated for each date of collection. To combine these data into a single set of data tables, NEON provides the *stackByTable* function within the [neonUtilities](https://github.com/NEONScience/NEON-utilities/tree/master/neonUtilities) package.
 
 To install the neonUtilities package: 
 
@@ -47,14 +47,11 @@ devtools::install_github('NEONScience/NEON-geolocation/geoNEON', dependencies=TR
 Setup
 ================
 
-1. Download the Woody Plant Vegetation Structure data. 
-2. Place the zipped data into a data directory with the following format: 
+1. Navigate to your `neon-veg` project directory. Create a folder there for the NEON data. Cosider naming it using the site code (such as "NIWO" for the Niwot Ridge Mountain Research Station). This will be your `data_dir`. 
+2. Inside the `data_dir`, create a folder called "woody-veg" to hold the Woody Plant Vegetation Structure data. 
+3. Download the Woody Plant Vegetation Structure data. **Make sure the zip file is named "NEON_struct-woody-plant.zip"**
+4. Place this zipped data into the `woody-veg` directory that you created. Its path should have the following format: `NIWO/woody-veg/NEON_struct-woody-plant.zip` 
 
-
-
-If you downloaded it as a .zip file, be sure to unzip the contents into the directory for this project before proceeding (e.g., `neon-veg/SJER/`). 
-
-*For a site with multiple dates of field data collection, there should be a series of folders with the collection date included in their names. Inside each folder, there are a series of Excel data tables including **vst_apparentindividual**, **vst_mappingandtagging**, and **vst_plotperyear**, which contain crown structure measurements, stem locations + species, and projection information, respectively. For more information, consult the [NEON User Guide to Woody Plant Vegetation Structure](http://data.neonscience.org/api/v0/documents/NEON_vegStructure_userGuide_vA).* 
 
 We will assume that the working directory is set to the location of the `neon-veg` project.
 
