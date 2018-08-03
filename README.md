@@ -79,3 +79,13 @@ Five shapefiles generated with accompanying attribute (.dbf), shape index (.shx)
 -	**polygons_checked_overlap.shp** - previous shapefile after checking polygons for overlap and removing/editing them as necessary
 
 -	**mapped_stems_final.shp** - tree stem points for the final polygons after checking overlap
+
+
+Contributors
+================
+
+This code was originally developed by Victoria Scholl.
+
+Contributors: 
+
+- Max Joseph 
