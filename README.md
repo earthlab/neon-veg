@@ -1,11 +1,11 @@
-neon-veg
+# neon-veg
 ================
 
 A collection of R code to create crown polygons based on field-based NEON Woody Vegetation Structure data.
 A circular polygon is created for each tree with a mapped stem location, height, and crown diameter. 
 
 
-Installation
+##Installation
 ================
 
 ### Dependencies
@@ -27,6 +27,8 @@ To run the workflow, you'll need the following R packages:
 -	purrr
 -	broom
 
+### Installing NEON packages
+
 The Woody Vegetation Structure data product is delivered in a series of data tables. The "mapping and tagging" table contains tree stem locations. The "apparent individual" table contains structural measurements of individual plants. The "plot per year" data table contains useful information about that year's sampling. For more information about these data, consult the [NEON User Guide to Woody Plant Vegetation Structure](http://data.neonscience.org/api/v0/documents/NEON_vegStructure_userGuide_vA). For a NEON site with multiple dates of field data collection, a series of data tables is generated for each date of collection. To combine these data into a single set of data tables, NEON provides the *stackByTable* function within the [neonUtilities](https://github.com/NEONScience/NEON-utilities/tree/master/neonUtilities) package.
 
 To install the neonUtilities package: 
@@ -44,7 +46,7 @@ devtools::install_github('NEONScience/NEON-geolocation/geoNEON', dependencies=TR
 ```
 
 
-Setup
+## Setup
 ================
 
 1. Download the Woody Plant Vegetation Structure data for your site and time period of interest. When downloaded from the [NEON Data Portal](http://data.neonscience.org/home), this data product is named **"NEON_struct-woody-plant.zip"** by default (as of 08/03/18). 
@@ -57,7 +59,7 @@ Setup
 We will assume that the working directory is set to the location of the `neon-veg` project.
 
 
-Output
+## Output
 ================
 
 Run the `main.R` script to generate the following files in the output directory: 
@@ -81,7 +83,7 @@ Five shapefiles generated with accompanying attribute (.dbf), shape index (.shx)
 -	**mapped_stems_final.shp** - tree stem points for the final polygons after checking overlap
 
 
-Contributors
+## Contributors
 ================
 
 This code was originally developed by Victoria Scholl.
