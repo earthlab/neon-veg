@@ -112,7 +112,7 @@ for (h5 in h5.list) {
   crs.info <- rhdf5::h5read(h5, crs.tag)
   
   # convert "UTM" to lowercase "utm" for proper usage later
-  crs.info$Proj4 <- chartr("UTM", "utm", crs.info$Proj4)
+  crs.info$Proj4 <- CRS(chartr("UTM", "utm", crs.info$Proj4))
   
   # print the coordinate reference data
   crs.info
@@ -183,6 +183,20 @@ for (h5 in h5.list) {
   refl[refl == data.ignore] <- NA 
   refl.scaled <- refl / scale.factor
   
+  # ########## testing polygon extraction ###################
+  # # create georeferenced raster using band 1 
+  # refl.1 <- (refl.scaled[1,,]) # convert to matrix
+  # refl.raster <- raster::raster(refl.1, crs = crs.info$Proj4)
+  # extent(refl.raster) <- tile.extent
+  # 
+  # # extract reflectance values from raster pixels inside polygon boundary 
+  # raster::extract(refl.raster, sf::as_Spatial(polygons.in$geometry.polygon[1]))
+  # # finds the intersection between bounding boxes of two spatial objects 
+  # test <- raster::intersect(refl.raster, sf::as_Spatial(polygons.in$geometry.polygon[5])); plot(test)
+  # # finds the intersection between geometries
+  # test <- rgeos::gIntersection(refl.raster, sf::as_Spatial(polygons.in$geometry.polygon[3])); plot(test)
+  # #########################################################
+  
   # plot RGB composite 
   # plot_hs_rgb(refl.scaled, 
   #             wavelengths,
@@ -208,14 +222,16 @@ for (h5 in h5.list) {
   # format the spectra for writing to file 
   spectra.write <- data.frame(individualID = polygons.in$indvdID,
                               scientificName = polygons.in$scntfcN,
+                              taxonID = polygons.in$taxonID,
+                              maxCrownDiameter = polygons.in$crownDm,
+                              height = polygons.in$height,
                               X = polygons.in$X,
                               Y = polygons.in$Y,
                               t(spectra))
-  names(spectra.write[, -(1:4)]) <- round(wavelengths)
   
-  
+  # rename the columns with rounded wavelength values
   data.table::setnames(spectra.write, 
-                       old = colnames(spectra.write[,-(1:4)]), 
+                       old = colnames(spectra.write[,-(1:7)]), 
                        new = as.character(round(wavelengths)))
   
   write.csv(spectra.write, file = paste0(out.dir.spectra,"spectral_reflectance_",
@@ -227,9 +243,11 @@ for (h5 in h5.list) {
 
 # read and plot the spectra .csv files  -----------------------------------
 
+# get a list of the .csv file per tile containing woody veg stemse
 csvs <- list.files(out.dir.spectra, full.names = TRUE)
 csvs <- csvs[grepl("*000.csv", csvs)]
 
+# combine all .csv data into a single data frame 
 for (i in 1:length(csvs)){
   print(csvs[i])
   csv <- read.csv(csvs[i])
@@ -242,19 +260,23 @@ for (i in 1:length(csvs)){
 }
 
 # remove the unneccessary column 
-spectra.all <- spectra.all %>% select(-X.1)
+spectra.all <- spectra.all %>% dplyr::select(-X.1)
 
 # write ALL the spectra to a single file 
 write.csv(spectra.all,
           file=paste0(out.dir.spectra,site, "_spectral_reflectance_ALL.csv"))
 
-
+# write the exact wavelengths to file for future use 
+write.table(data.frame(wavelengths = wavelengths),
+            paste(out.dir.spectra,"wavelengths.txt"),
+            sep="\n",
+            row.names=FALSE)
 
 # Plot spectra and color line by species ----------------------------------
 
 # keep just the reflectance values along with individual ID and species
 # for the first tree
-spectra.1 <- spectra.all[1,2:ncol(spectra.all)] %>% 
+spectra.1 <- spectra.all[1,1:ncol(spectra.all)] %>% 
                   dplyr::select(-c(X,Y))
 
 # organize the data into a data frame where the first column contains
@@ -265,19 +287,25 @@ spectra.plot <- tidyr::gather(spectra.1,
                               key = wavelength,
                               value = "reflectance",
                               -individualID,
-                              -scientificName)
+                              -scientificName,
+                              -taxonID,
+                              -maxCrownDiameter,
+                              -height)
 # add the actual wavelenth values into the wavelengths column
 spectra.plot$wavelength <- wavelengths
 
 
 for (i in 2:nrow(spectra.all)){
-  spectra.current <- spectra.all[i,2:ncol(spectra.all)] %>% 
+  spectra.current <- spectra.all[i,1:ncol(spectra.all)] %>% 
                         dplyr::select(-c(X,Y))
   spectra.current <- tidyr::gather(spectra.current,
                                 key = wavelength,
                                 value = "reflectance",
                                 -individualID,
-                                -scientificName)
+                                -scientificName,
+                                -taxonID,
+                                -maxCrownDiameter,
+                                -height)
   spectra.current$wavelength <- wavelengths
   
   spectra.plot <- rbind(spectra.plot, spectra.current)
@@ -295,10 +323,6 @@ remove.bands <- wavelengths[(wavelengths > bad.band.window.1[1] &
 
 spectra.plot$reflectance[spectra.plot$wavelength %in% remove.bands] <- NA
 
-
-# legend labels - use taxon codes since they are shorter 
-legend.labels <- c("ABLAL", "PIEN", "PIFL2", "PICOL")
-
 # plot all spectra on single plot 
 ggplot(data = spectra.plot, aes(x = wavelength, y = reflectance, colour = scientificName)) +
   geom_line(aes(group = individualID)) + 
@@ -312,25 +336,71 @@ ggplot(data = spectra.plot, aes(x = wavelength, y = reflectance, colour = scient
 ggplot(data = spectra.plot, 
        aes(x = wavelength, 
            y = reflectance, 
-           colour = scientificName)) +
+           colour = taxonID)) +
   geom_line(aes(group = individualID), alpha = 0.5) + 
-  facet_wrap(. ~ scientificName, ncol = 2) + 
+  facet_wrap(. ~ taxonID, ncol = 2) + 
   labs(x = "wavelength (nm)", color = "species") + 
   ggtitle("Hyperspectral reflectance extracted per center pixel") + 
-  scale_color_manual(labels = legend.labels, 
+  scale_color_manual(
                      values = c("#d7191c", "#fdae61", "#abdda4", "#2b83ba"))
+
+# save plot to image file 
+ggsave(paste0(out.dir.spectra,"spectral_reflectance_per_taxonID.png"))
+
+# spectral distance calculations ------------------------------------------
+
 
 
 
 # extract spectra within each polygon -------------------------------------
 
+# create a georeferenced raster using the first hyperspectral band (just for 
+# the coordinates, to compare to each polygon)
+
+band2Raster <- function(file, band, noDataValue, xMin, yMin, res, crs){
+  #first read in the raster
+  out<- h5read(f,"Reflectance",index=list(1:nCols,1:nRows,band))
+  #Convert from array to matrix
+  out <- (out[,,1])
+  #transpose data to fix flipped row and column order 
+  #depending upon how your data are formated you might not have to perform this
+  #step.
+  out <-t(out)
+  #assign data ignore values to NA
+  #note, you might chose to assign values of 15000 to NA
+  out[out == myNoDataValue] <- NA
+  
+  #turn the out object into a raster
+  outr <- raster(out,crs=myCrs)
+  
+  # define the extents for the raster
+  #note that you need to multiple the size of the raster by the resolution 
+  #(the size of each pixel) in order for this to work properly
+  xMax <- xMin + (outr@ncols * res)
+  yMin <- yMax - (outr@nrows * res)
+  
+  #create extents class
+  rasExt  <- extent(xMin,xMax,yMin,yMax)
+  
+  #assign the extents to the raster
+  extent(outr) <- rasExt
+  
+  #return the raster object
+  return(outr)
+}
+
+# create a georeferenced raster using band 1 to find which pixels each polygon 
+# intersects with
+
+hsRaster <- 
+
 # get image indices of the pixels within each polygon
 
-# slice the entire hyperspectral reflectance, then average the pixel values? save them? 
+# slice the entire hyperspectral reflectance, then average the pixel values? 
+  # save them? 
 
-
-# adapt the Python tutorial here? http://neondataskills.org/HDF5/neon-aop-hdf5-py 
-# or this one http://neondataskills.org/HDF5/Plot-Hyperspectral-Pixel-Spectral-Profile-In-R/
+# OR, clip the entire hyperspectral raster using the extent of the tree, 
+  #then convert the remaining (much smaller ) 
 
 
 
