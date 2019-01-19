@@ -135,18 +135,32 @@ last_id_section <- sapply(stringr::str_split(individualIDs_all, "[.]"), tail, 1)
 # create another list without any letters
 last_digits <- gsub("[^0-9]","",last_id_section)
 
+# create a lookup table with the id information
+id_lut <- as.data.frame(last_digits) %>% 
+            mutate(individualIDs_all = individualIDs_all,
+                   last_id_section = last_id_section,
+                   height = woody_merged$height,
+                   maxCrownDiameter = woody_merged$maxCrownDiameter)
+
 # count the frequency of each ID number. identify the ID's with more than one entry. 
-count_ids <- as.data.frame(table(last_digits)) %>% 
-  mutate(individualID = individualIDs_all) %>% 
+multiple_ids <- as.data.frame(table(last_digits)) %>% 
   filter(Freq >1)
 
+# create a list to populate with individualIDs to remove
+remove_ids <- c()
+
 # loop through the ID's that appear more than once in the data set
-for(id in count_ids$last_digits){
+for(id in as.character(multiple_ids$last_digits)){
   
   print(id)
   
-  # 
+  # get the complete individual IDs 
+  duplicates <- print(id_lut[id_lut$last_digits == id,])
   
+  # see if the height and diameter values are identical 
+  if(var(duplicates$height)==0 && var(duplicates$maxCrownDiameter) == 0){
+    remove_ids <- c(remove_ids, duplicates$individualIDs_all)
+  }
   
 }
 
