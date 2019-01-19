@@ -18,7 +18,7 @@ library(broom)
 ########################### SETUP ##################################
 
 # path to NEON Woody Plant Vegetation Structure zip file 
-data_path <- "data/NEON_struct-woody-plant.zip" 
+data_path <- "data/NIWO/NEON_struct-woody-plant.zip" 
 
 # specify output directory path and filename of output shapefile to be written
 out_dir <- "output/"
@@ -118,6 +118,39 @@ tiles <- list_tiles_with_plants(woody_utm, out_dir)
 coord_ref <- get_vst_crs(paste0(tools::file_path_sans_ext(data_path),
                                 '/stackedFiles/'))
 
+# identify multi-bole trees: sometimes, there are multiple entries with identical
+# coordinates, height, and crown diameter (but their individualID's are different,
+# with "A", "B", etc. appended on the end of the last five numbers.) In this step, 
+# the individualID values are assessed to find multi-bole sets. 
+# if the coordinates, height, and crown diameters are identical, then the
+# entry with a letter appended on the end is deleted from the analysis. This prevents
+# duplicate polygons being used to extract spectra. 
+
+# get a list of all individual ID strings 
+individualIDs_all <- as.character(unique(droplevels(woody_merged$individualID)))
+
+# split each individual ID using a period delimiter
+last_id_section <- sapply(stringr::str_split(individualIDs_all, "[.]"), tail, 1)
+
+# create another list without any letters
+last_digits <- gsub("[^0-9]","",last_id_section)
+
+# count the frequency of each ID number. identify the ID's with more than one entry. 
+count_ids <- as.data.frame(table(last_digits)) %>% 
+  mutate(individualID = individualIDs_all) %>% 
+  filter(Freq >1)
+
+# loop through the ID's that appear more than once in the data set
+for(id in count_ids$last_digits){
+  
+  print(id)
+  
+  # 
+  
+  
+}
+
+
 
 
 # apply processing steps and create polygons ------------------------------
@@ -193,3 +226,4 @@ species_table
 
 # construct height-crown diameter allometry for each species
 allometries <- allometry_height_diam(stems_final)
+
