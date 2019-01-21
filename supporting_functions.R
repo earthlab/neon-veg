@@ -363,7 +363,7 @@ polygon_overlap <- function(df, nPix, shp_filename){
         
         # get area of the overlap between current polygon and test polygon
         overlap.area <- round(raster::intersect(current_poly, test_poly)@polygons[[1]]@area, 2)
-        clip <- gIntersection(current_poly, test_poly, byid = TRUE, drop_lower_td = TRUE)
+        clip <- rgeos::gIntersection(current_poly, test_poly, byid = TRUE, drop_lower_td = TRUE)
         
         # if total overlap
         if(current_poly.area == overlap.area | 
@@ -644,4 +644,360 @@ remove_duplicates <- function(df){
   return(df_no_duplicates)
   
 }
+
+
+# delete_engulfed ---------------------------------------------------------
+
+delete_engulfed <- function(df, shp_filename){
+  # This function checks for polygons that are shorter and totally within
+  # other polygons (hence, "engulfed") and deletes them based on the assumption
+  # that they will not be visible in the airborne imagery. 
+  # "Engulfed" polygons are determined by calculating the area of overlap
+  # between each polygon pair. If the area of overlap is equal to the total
+  # area of either polygon, then it's considered engulfed. The
+  # shorter polygon of the pair is then deleted from subsequent analysis. 
+  #
+  # Args
+  #   df
+  #     SpatialPolygonsDataFrame containing polygons along with measurement data
+  #     for each tree (height, max crown diameter, scientific name, taxon ID,
+  #     individualID).
+  #
+  #   shp_filename
+  #     character string (including the output path) where the remaining polygons 
+  #     will be written to file after deleting the engulfed polygons. 
+  #
+  
+  print("deleting engulfed polygons...")
+  
+  # order polygons from tallest to shortest
+  polys_ordered <- df[order(df$height, 
+                            decreasing = TRUE),]
+  
+  # copy the ordered data frame, from which engulfed polygons will be deleted 
+  polys_filtered <- polys_ordered
+  
+  for (individualID in polys_ordered@data$individualID){
+    
+    #print(individualID)
+    
+    # if current polygon is not in filtered set, skip to the next current polygon
+    if(sum(polys_filtered$individualID==individualID) == 0){
+      next
+    }
+    
+    # extract current vs. all other polygon from data frame
+    current_poly <- get_poly(polys_filtered, index_type = 'id', number = individualID)
+    other_polys <- polys_filtered[polys_filtered$individualID!=current_poly$individualID,]
+    
+    # check for overlap between current polygon and all polygons
+    overlap <- raster::intersect(current_poly, other_polys)
+    n_overlap <- length(overlap)
+    
+    #print(paste('n_overlap: ', as.character(n_overlap)))
+    
+    # if there is at least one polygon that overlaps with the current polygon,
+    # check to see if it is engulfed. 
+    if(n_overlap>0){
+      
+      #print(o)
+      
+      # loop through the engulfed polygons. since the polygons have been reordered
+      # from tallest to shortest, we can assume that any intersecting polygons 
+      # are shorter (or of equal height). 
+      
+      for (o in 1:n_overlap){
+        
+        # check to see if the test polygon is still in the filtered polygon set... 
+        test_poly <- get_poly(polys_filtered, 
+                              index_type = 'id', 
+                              number = overlap@data$individualID.2[[o]])
+        # if test polygon is not in filtered set, skip to the next overlapping polygon
+        if(sum(polys_filtered$individualID==test_poly$individualID) == 0){
+          next
+        }
+        
+        # get area of current and test polygons that overlap
+        current_poly.area <- round(current_poly@polygons[[1]]@area, 2)
+        test_poly.area <- round(test_poly@polygons[[1]]@area, 2) 
+        
+        #print(paste("current_poly.area =", as.character(current_poly.area)))
+        #print(paste("test_poly.area =", as.character(test_poly.area)))
+        
+        # get area of the overlap between current polygon and test polygon
+        overlap.area <- round(raster::intersect(current_poly, test_poly)@polygons[[1]]@area, 2)
+        #print(paste("overlap.area =", as.character(overlap.area)))
+        
+        clip <- rgeos::gIntersection(current_poly, test_poly, byid = TRUE, drop_lower_td = TRUE)
+        
+        # if total overlap
+        if(current_poly.area == overlap.area | 
+           test_poly.area == overlap.area){
+          
+          # then remove test polygon from filtered list
+          polys_filtered <- polys_filtered[polys_filtered$individualID!=test_poly$individualID,]
+          
+          #print("totally engulfed. removing test poly from polys_filtered")
+          
+        }
+        
+      }
+      
+    }
+    
+  }
+  
+  # write the remaining polygons to file after deleting engulfed polygons 
+  # write final polygons to file after checking for overlap
+  writeOGR(polys_filtered, getwd(),
+           shp_filename,
+           driver="ESRI Shapefile", overwrite_layer = TRUE)
+  
+  # return the polygons that remain after deleting the engulfed ones
+  return(polys_filtered)
+  
+}
+
+
+# clip_overlap ------------------------------------------------------------
+
+clip_overlap <- function(df, nPix, shp_filename){
+  # Each polygon will be compared with the rest to determine which ones are 
+  # overlapping. For each overlapping pair, the taller polygon clips the 
+  # shorter one. If the clipped polygon is smaller than the specified area 
+  # threshold then it is deleted from subsequent analysis. 
+  #
+  # Args
+  #   df
+  #     (SpatialPolygonsDataFrame) containing polygons to compare / clip. 
+  #   nPix
+  #     (integer) Number of hyperspectral pixels, specifies the area threshold.
+  #     Polygons with area values less than this size are deleted.
+  #
+  #   shp_filename
+  #     (character string) contianing the path and file name to write the final
+  #     polygons to file. 
+  #
+  #
+  
+  message("\nChecking for overlap between polygons. Clipping shorter polygons...")
+  
+  # multiply area of 1 pixel by the numPix input parameter
+  # rgb pixels are 25cm, 16 of them in a single HS pixel
+  thresh <- 25 * 25 * 16 * nPix # [cm^2]
+  
+  # how should be polygons be reordered? 
+  # for now, reorder then based on height.
+  polys_ordered <- df[order(df$height, 
+                            decreasing = TRUE),]
+  
+  # create a copy of the polygons to update with clipped/deleted entries
+  polys_filtered <- polys_ordered
+  
+  # create an empty list of polygon pairs that have been compared 
+  compared_pairs <- list();
+  c <- 1 # index for appending to list
+  
+  for (individualID in as.character(polys_ordered@data$individualID)){
+    
+    print(individualID)
+    
+    # if this polygon was removed from the polys_filtered
+    # data frame in a previous iteration, skip it 
+    if(sum(polys_filtered$individualID==individualID) == 0){
+      next
+    }
+    
+    # extract current vs. all other polygon from data frame
+    current_poly <- get_poly(polys_filtered, index_type = 'id', number = individualID)
+    other_polys <- polys_filtered[polys_filtered$individualID!=current_poly$individualID,]
+    
+    # check for overlap between current polygon and all polygons
+    overlap <- raster::intersect(current_poly, other_polys)
+    n_overlap <- length(overlap)
+    print(n_overlap)
+    
+    if(n_overlap>0){ 
+      for (o in 1:n_overlap){
+        
+        print(paste("o = ", as.character(o)))
+        
+        # if current polygon ID is not in filtered set
+        if(sum(polys_filtered$individualID==individualID) == 0){
+          break
+        }
+        
+        # get height of current and test polygons that overlap
+        current_poly.height <- current_poly@data$height
+        
+        test_poly <- get_poly(polys_filtered, 
+                              index_type = 'id', 
+                              number = overlap@data$individualID.2[[o]])
+        test_poly.height <- test_poly@data$height
+        
+        print(paste("current_poly.height = ", current_poly.height))
+        print(paste("test_poly.height = ", test_poly.height))
+        
+        # combine the ID's of the current and test polygons
+        # to keep track of which pairs have been compared 
+        id.pair <- paste(current_poly@data$individualID,
+                         test_poly@data$individualID,
+                         sep = " ")
+        
+        # if polygon pair was already compared, skip to the next pair
+        if (id.pair %in% compared_pairs) {
+          
+          print("this pair of polygons was already compared. skipping to the next pair.")
+          next
+          
+        } else { 
+          
+          # add to the list of polygon pairs that have been compared 
+          compared_pairs[[c]] <- id.pair
+          
+          c <- c + 1 # increment index 
+          
+          # add opposite combination of polygons
+          compared_pairs[[c]] <- paste(test_poly@data$individualID,
+                                       current_poly@data$individualID,
+                                       sep = " ")
+          # increment index 
+          c <- c + 1
+          
+        }
+        
+        # if test polygon is not in filtered set, skip to the next overlapping polygon
+        # (because it has already been removed)
+        if(sum(polys_filtered$individualID==test_poly$individualID) == 0){
+          next
+        }
+        
+        # if the area of one of the polygons is equivalent to zero, delete it and 
+        # skip to the next overlapping polygon. 
+        if(current_poly@polygons[[1]]@area < 0.5){
+          
+          print("current polygon has 0 area. skipping to next overlapping pair.")
+          # delete the current polygon from the polygons_filtered data frame. 
+          polys_filtered <- polys_filtered[polys_filtered$individualID!=current_poly$individualID,]
+          
+          next
+          
+        } else if(test_poly@polygons[[1]]@area < 0.5){
+          print("test polygon has 0 area. skipping to next overlapping pair.")
+          
+          # delete the test polygon from the polygons_filtered data frame. 
+          polys_filtered <- polys_filtered[polys_filtered$individualID!=test_poly$individualID,]
+          
+          next
+  
+        }
+        
+        # get overlap region between current polygon and test polygon
+        # VS-NOTE: might not need this step, if raster::erase and raster::crop are being used below. 
+        #clip <- rgeos::gIntersection(current_poly, test_poly, byid = TRUE, drop_lower_td = TRUE)
+        
+        # compare the heights of the polygons
+        if(current_poly.height > test_poly.height){
+          
+          print("current poly is taller than test poly. Clipping test polygon.")
+          
+          # VS-NOTE debugging the polygon comparison issue for individualID
+          plot(current_poly)
+          plot(test_poly, add = TRUE, borer = "red")
+          
+          print(current_poly)
+          print(test_poly)
+          
+          print(current_poly@polygons[[1]])
+          print(test_poly@polygons[[1]])
+          ###
+          
+          # if current polygon is taller, clip the test polygon.
+          clipped <- raster::erase(test_poly,
+                                   raster::crop(test_poly, current_poly))
+          
+          # unfortunately, gDifference does not preserve the attributes, it only
+          # preserves the geometry. 
+          clipped_geom <- rgeos::gDifference(test_poly, current_poly, 
+                                         byid = TRUE, drop_lower_td = TRUE)
+          
+          # set the ID field to match the test polygon individualID
+          clipped_geom@polygons[[1]]@ID <- as.character(test_poly$individualID)
+          
+          # get the index within the filtered polygons data frame 
+          # where the test polygon belongs. 
+          j <- which(polys_filtered@data$individualID == test_poly$individualID)
+          
+        } else{
+          
+          print("test poly is taller than current poly. Clipping current polygon.")
+          
+          ### VS-NOTE debugging the polygon comparison issue for individualID
+          plot(current_poly)
+          plot(test_poly, add = TRUE, borer = "red")
+          
+          print(current_poly)
+          print(test_poly)
+          
+          print(current_poly@polygons[[1]])
+          print(test_poly@polygons[[1]])
+          ###
+          
+          
+          # otherwise, the test polygon is taller: clip the current polygon.
+          clipped <- raster::erase(current_poly,
+                                   raster::crop(current_poly, test_poly))
+          
+          clipped_geom <- rgeos::gDifference(current_poly, test_poly,
+                                        byid = TRUE, drop_lower_td = TRUE)
+          
+          # set the ID field to match the current polygon individualID
+          clipped_geom@polygons[[1]]@ID <- as.character(current_poly$individualID)
+          
+          # get the index within the filtered polygons data frame 
+          # where the current polygon belongs. 
+          j <- which(polys_filtered@data$individualID == current_poly$individualID)
+          
+        }
+        
+        plot(clipped_geom) 
+        
+        # if there is no clipped area, skip to the next overlap polygon
+        if(length(clipped) == 0){
+          next
+          
+        } else{
+          
+          # check the area of the clipped test polygon. If it is greater than
+          # or equal to the area threshold, replace it as the polygon 
+          # geometry for the entry matching the test individualID in the 
+          # polygons_filtered data frame. 
+          if(clipped@polygons[[1]]@area * 10000 >= thresh){
+            
+            # replace the original polygon with the clipped polygon
+            polys_filtered@polygons[[j]] <- clipped_geom@polygons[[1]]
+            
+            
+          } else{
+            # otherwise, delete the test polygon from the polygons_filtered data frame. 
+            polys_filtered <- polys_filtered[polys_filtered$individualID!=clipped$individualID,]
+            
+          }
+        }
+      }
+    }
+  }
+  
+  
+  print(length(polys_filtered))
+  
+  # write final polygons to file after checking for overlap
+  writeOGR(polys_filtered, getwd(),
+           paste(shp_filename),
+           driver="ESRI Shapefile", overwrite_layer = TRUE)
+  
+  return(polys_filtered)
+  
+}
+
 

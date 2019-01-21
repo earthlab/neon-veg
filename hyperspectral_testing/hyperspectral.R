@@ -7,7 +7,7 @@
 # source("http://bioconductor.org/biocLite.R")
 # biocLite("rhdf5")
 
-# r Load `raster` and `rhdf5` packages and read NIS data into R
+# r Load `raster` and `rhdf5` packages and read hyperspectral data into R
 library(rhdf5)
 library(rgdal)
 library(raster)
@@ -21,8 +21,8 @@ library(data.table)
 setwd("~/github/neon-veg/")
 
 # load custom functions
-source("hyperspectral_testing/get_hs_band.R")
-source("hyperspectral_testing/plot_hs_rgb.R")
+source("supporting_functions.R") #check_create_dir
+
 
 # directory with hyperspectral .h5 files
 h5.dir <- '~/github/neon-veg/data/NIWO/hyperspectral_reflectance/'
@@ -78,6 +78,13 @@ polygons.points <- merge(as.data.frame(polygons.sf),
                          by="indvdID") %>% 
   dplyr::rename(geometry.polygon = geometry.x, 
                 geometry.point = geometry.y)
+
+
+
+
+
+
+
 
 
 
@@ -272,6 +279,12 @@ write.table(data.frame(wavelengths = wavelengths),
             sep="\n",
             row.names=FALSE)
 
+# read wavelengths if not previously created
+#wavelengths = read.table(paste(out.dir.spectra,"wavelengths.txt"),
+#                         sep="\n",
+#                         skip = 1,
+#                         col.names = 'wavelength')
+
 # Plot spectra and color line by species ----------------------------------
 
 # keep just the reflectance values along with individual ID and species
@@ -324,12 +337,14 @@ remove.bands <- wavelengths[(wavelengths > bad.band.window.1[1] &
 spectra.plot$reflectance[spectra.plot$wavelength %in% remove.bands] <- NA
 
 # plot all spectra on single plot 
+legend.labels = c('a','b','c','d')
 ggplot(data = spectra.plot, aes(x = wavelength, y = reflectance, colour = scientificName)) +
   geom_line(aes(group = individualID)) + 
   labs(x = "wavelength (nm)", color = "species") + 
-  ggtitle("Hyperspectral reflectance extracted per center pixel") + 
-  scale_color_manual(labels = legend.labels, 
-                     values = c("#d7191c", "#fdae61", "#abdda4", "#2b83ba"))
+  ggtitle("Hyperspectral reflectance extracted per center pixel") 
+          + scale_color_manual(labels = legend.labels, 
+                     values = c("#d7191c", "#fdae61", "#abdda4", "#2b83ba")
+  )
 
 
 # Use facet_grid for a separate plot per species 
@@ -348,6 +363,56 @@ ggplot(data = spectra.plot,
 ggsave(paste0(out.dir.spectra,"spectral_reflectance_per_taxonID.png"))
 
 # spectral distance calculations ------------------------------------------
+
+
+
+
+# raster stack HS image ---------------------------------------------------
+
+# create georeferenced raster using band 1 
+r1 <- (refl.scaled[1,,]) # convert first band to matrix
+r1 <- raster::raster(r1, crs = crs.info$Proj4)
+extent(r1) <- tile.extent
+# start the raster stack with first band 
+s <- raster::stack(r1)
+
+# loop through bands and create a giant rasterstack with 426 bands
+for(b in 2:n.bands){
+  print(b)
+  
+  # create raster with current band
+  r <- (refl.scaled[b,,]) # convert to matrix
+  r <- raster::raster(r, crs = crs.info$Proj4)
+  extent(r) <- tile.extent
+  
+  # add additional band to the stack with the addLayer function
+  s <- raster::addLayer(s, r)
+  
+}
+
+# adjust the names for each layer in raster stack to correspond to wavelength
+names(s) <- round(wavelengths)
+
+# instead of using the sf version of the polygons, need to use SpatialPolygons 
+# find which trees are within current tile 
+tree.coords.in <- sp::point.in.polygon(tree.coords$X, tree.coords$Y,
+  c(tile.extent@xmin, tile.extent@xmax, tile.extent@xmax, tile.extent@xmin),
+  c(tile.extent@ymin, tile.extent@ymin, tile.extent@ymax, tile.extent@ymax))
+
+# subset the SpatialPolygons for those within current tile
+# ?????? Get single polygon from the SpatialPolygonsDataFrame
+spatial.polygons.in <- polygons@polygons[tree.coords.in]
+p <- spatial.polygons.in[1]
+
+# extract the spectra within each polygon within current tile
+extracted <- raster::extract(x = s,
+                             y = p,
+                             df = TRUE)
+
+
+
+
+
 
 
 
@@ -391,8 +456,6 @@ band2Raster <- function(file, band, noDataValue, xMin, yMin, res, crs){
 
 # create a georeferenced raster using band 1 to find which pixels each polygon 
 # intersects with
-
-hsRaster <- 
 
 # get image indices of the pixels within each polygon
 

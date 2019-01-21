@@ -23,6 +23,19 @@ data_path <- "data/NIWO/NEON_struct-woody-plant.zip"
 # specify output directory path and filename of output shapefile to be written
 out_dir <- "output/"
 
+# factor to specify the relative size of the polygons generated.
+# the radius of each polygon is divided by this value. 
+# when this factor == 1, the polygons have a radius of (maxCrownDiameter / 2),
+# so the polygons are created with radii half the size as the maxCrownDiameter. 
+# when this factor == 2, the polygons have a radius of (maxCrownDiameter / 4),
+# so the polygons are one quarter of the size as the maxCrownDiameter.  
+crown_size_factor <- 1
+
+# number of pixels used to threshold the area of polygons.
+# polygons smaller than this will be excluded at certain steps during the analysis. 
+# the units of this threshold are # of pixels in the hyperspectral data set (1m x 1m) 
+area_thresh_pixels <- 4
+
 #####################################################################
 
 # load local external functions 
@@ -118,6 +131,9 @@ tiles <- list_tiles_with_plants(woody_utm, out_dir)
 coord_ref <- get_vst_crs(paste0(tools::file_path_sans_ext(data_path),
                                 '/stackedFiles/'))
 
+
+# remove multi-bole entries -----------------------------------------------
+
 # identify multi-bole trees: sometimes, there are multiple entries with identical
 # coordinates, height, and crown diameter (but their individualID's are different,
 # with "A", "B", etc. appended on the end of the last five numbers.) In this step, 
@@ -135,10 +151,15 @@ last_id_section <- sapply(stringr::str_split(individualIDs_all, "[.]"), tail, 1)
 # create another list without any letters
 last_digits <- gsub("[^0-9]","",last_id_section)
 
+# create a boolean vector where bole entries (which contain letters)
+# are True, but stem entries (without letters) are False 
+is_bole <- last_id_section != last_digits
+
 # create a lookup table with the id information
 id_lut <- as.data.frame(last_digits) %>% 
             mutate(individualIDs_all = individualIDs_all,
                    last_id_section = last_id_section,
+                   is_bole = is_bole, 
                    height = woody_merged$height,
                    maxCrownDiameter = woody_merged$maxCrownDiameter)
 
@@ -159,12 +180,20 @@ for(id in as.character(multiple_ids$last_digits)){
   
   # see if the height and diameter values are identical 
   if(var(duplicates$height)==0 && var(duplicates$maxCrownDiameter) == 0){
-    remove_ids <- c(remove_ids, duplicates$individualIDs_all)
+    remove_ids <- c(remove_ids, duplicates$individualIDs_all[duplicates$is_bole==TRUE])
   }
   
 }
 
+# remove the entries with the multi-bole individualIDs identified in the previous step. 
+woody_multibole_removed <- woody_merged %>% 
+  filter(!(individualID %in%remove_ids))
 
+# check how many trees are left after removing multi-bole entries
+tree_count <- paste0(as.character(length(unique(woody_multibole_removed$individualID))), 
+                     ' trees remaining after multi-bole entries were removed')
+print(tree_count)
+write(tree_count, count_file, append=TRUE)
 
 
 # apply processing steps and create polygons ------------------------------
@@ -180,15 +209,26 @@ df_to_shp_points(woody_utm,
 # for all complete entries 
 woody_df_to_shp(df = woody_merged, 
                      coord_ref = coord_ref,
-                     shrink = 1,
+                     shrink = crown_size_factor,
                      num_sides = 24,
                      shp_filename = paste(out_dir,
                                            "polygons_all",
                                            sep = ""))
 
+# write polygons to file after multi-bole entries have been removed 
+# (this is before the area threshold filtering step)
+woody_df_to_shp(df = woody_multibole_removed, 
+                coord_ref = coord_ref,
+                shrink = crown_size_factor,
+                num_sides = 24,
+                shp_filename = paste(out_dir,
+                                     "polygons_multibole_removed",
+                                     sep = ""))
+
+
 # remove polygons with area < 4 hyperspectral pixels 
-woody_thresh <- apply_area_threshold(woody_merged,
-                                     nPix = 4)
+woody_thresh <- apply_area_threshold(woody_multibole_removed,
+                                     nPix = area_thresh_pixels)
 
 # number of trees after applying area threshold
 tree_count <- paste0(as.character(length(unique(woody_thresh$individualID))),
@@ -197,24 +237,52 @@ print(tree_count)
 write(tree_count, count_file, append=TRUE)
 
 # create circular polygon for each stem based on max crown diameter
+# after polygons have been filtered based on area threshold
 woody_polygons <- woody_df_to_shp(df = woody_thresh, 
                                   coord_ref = coord_ref,
-                                  shrink = 1,
+                                  shrink = crown_size_factor,
                                   num_sides = 24,
                                   shp_filename = paste(out_dir,
                                                        "polygons_filtered",
                                                        sep = ""))
 
-# delete/clip overlapping polygons
-woody_final <- polygon_overlap(woody_polygons,
-                               nPix = 4, 
-                               shp_filename = paste(out_dir,
-                                                    "polygons_checked_overlap",
-                                                    sep = ""))
+# remove engulfed polygons 
+woody_delete_engulfed <- delete_engulfed(woody_polygons,
+                                         paste(out_dir, 
+                                               "polygons_deleted_engulfed"))
+
+# count how many polygons are left after removing the engulfed ones. 
+tree_count <- paste0(as.character(dim(woody_delete_engulfed)[1]),
+                     " trees after deleting engulfed polygons")
+print(tree_count)
+write(tree_count, count_file, append=TRUE)
+
+
+
+# Clip/delete overlapping polygons ----------------------------------------
+
+
+# # clip overlapping polygons 
+# This function also includes a check that deletes engulfed polygons.
+# Since deleting engulfed polygons was added as its own function,
+# I wrote a new function (clip_overlap) to deal with the overlap clipping instead. 
+# woody_final <- polygon_overlap(woody_polygons,
+#                                nPix = area_thresh_pixels, 
+#                                shp_filename = paste(out_dir,
+#                                                     "polygons_checked_overlap",
+#                                                     sep = ""))
+
+
+# clip overlapping polygons (delete them if remaining polygons < area threshold) 
+woody_clipped <- clip_overlap(woody_delete_engulfed,
+                              nPix = area_thresh_pixels,
+                              shp_filename = paste0(out_dir,
+                                                   "polygons_clipped_overlap"))
+
 
 # write shapefile of mapped stem locations for final polygons 
 # get the easting and northing tree coordinates from woody_thresh data frame
-stems_final <- as.data.frame(woody_final) 
+stems_final <- as.data.frame(woody_clipped) 
 stems_coordinates <- woody_thresh %>% dplyr::select(individualID, easting, northing)
 stems_final <- merge(stems_final, stems_coordinates, by = "individualID")
 df_to_shp_points(stems_final, 
@@ -226,7 +294,7 @@ df_to_shp_points(stems_final,
 
 # number of trees after checking for overlap & 
 # applying area threshold to clipped polygons 
-tree_count <- paste0(as.character(length(unique(woody_final$individualID))),
+tree_count <- paste0(as.character(length(unique(woody_clipped$individualID))),
                     " trees after checking for polygon overlap")
 print(tree_count)
 write(tree_count, count_file, append=TRUE)
