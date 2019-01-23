@@ -261,18 +261,6 @@ write(tree_count, count_file, append=TRUE)
 
 # Clip/delete overlapping polygons ----------------------------------------
 
-
-# # clip overlapping polygons 
-# This function also includes a check that deletes engulfed polygons.
-# Since deleting engulfed polygons was added as its own function,
-# I wrote a new function (clip_overlap) to deal with the overlap clipping instead. 
-# woody_final <- polygon_overlap(woody_polygons,
-#                                nPix = area_thresh_pixels, 
-#                                shp_filename = paste(out_dir,
-#                                                     "polygons_checked_overlap",
-#                                                     sep = ""))
-
-
 # clip overlapping polygons (delete them if remaining polygons < area threshold) 
 woody_clipped <- clip_overlap(woody_delete_engulfed,
                               nPix = area_thresh_pixels,
