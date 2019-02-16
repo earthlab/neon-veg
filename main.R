@@ -294,9 +294,8 @@ close(count_file)
 species_table <- make_species_table(stems_final)
 species_table
 
-# construct height-crown diameter allometry for each species
+# construct height-crown diameter allometry for each species.
 allometries <- allometry_height_diam(stems_final, 
                                      paste0(out_dir,"allometry.png"))
 
-# write the allometries figure to file 
 
