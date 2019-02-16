@@ -581,7 +581,7 @@ apply_height_threshold <- function(df, ht){
 
 # allometry_height_diam ---------------------------------------------------
 
-allometry_height_diam <- function(df){
+allometry_height_diam <- function(df, outFilename){
   # calculates linear regression models for each taxonID 
   # within the input data frame. 
   # Dependent variable: crown diameter (m) 
@@ -628,6 +628,9 @@ allometry_height_diam <- function(df){
     geom_smooth(method=lm) +
     labs(x = "height (m)", y = "crown diameter (m)")
   print(g)
+  
+  # write plot image to file 
+  ggsave(outFilename, g, width = 8, height = 4)
   
   return(models)
   
