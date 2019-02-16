@@ -28,8 +28,9 @@ out_dir <- "output/"
 # when this factor == 1, the polygons have a radius of (maxCrownDiameter / 2),
 # so the polygons are created with radii half the size as the maxCrownDiameter. 
 # when this factor == 2, the polygons have a radius of (maxCrownDiameter / 4),
-# so the polygons are one quarter of the size as the maxCrownDiameter.  
-crown_size_factor <- 1
+# so the polygons are created with radii 50% smaller than the maxCrownDiameter.  
+crown_size_factor <- 1 # polygons have max diameter
+#crown_size_factor <- 2 # polygons have 50% of the max diameter
 
 # number of pixels used to threshold the area of polygons.
 # polygons smaller than this will be excluded at certain steps during the analysis. 
@@ -203,6 +204,13 @@ df_to_shp_points(woody_utm,
                  coord_ref, 
                  shp_filename = paste(out_dir,
                                       "mapped_stems",
+                                      sep = ""))
+
+# write shapefile with points mapped stems with crown diameter measurements 
+df_to_shp_points(woody_merged, 
+                 coord_ref, 
+                 shp_filename = paste(out_dir,
+                                      "mapped_stems_with_crown_diameter",
                                       sep = ""))
 
 # before applying area threshold, create polygon shapefile
