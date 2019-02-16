@@ -919,8 +919,6 @@ clip_overlap <- function(df, nPix, shp_filename){
           
         }
         
-        plot(clipped_geom) 
-        
         # if there is no clipped area, skip to the next overlap polygon
         if(length(clipped) == 0){
           next
