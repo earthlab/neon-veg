@@ -21,7 +21,9 @@ library(broom)
 data_path <- "data/NIWO/NEON_struct-woody-plant.zip" 
 
 # specify output directory path and filename of output shapefile to be written
-out_dir <- "output/"
+#out_dir <= "output/"
+#out_dir <- "shapefiles_maxDiameter/"
+out_dir <- "shapefiles_halfDiameter/"
 
 # factor to specify the relative size of the polygons generated.
 # the radius of each polygon is divided by this value. 
@@ -29,8 +31,8 @@ out_dir <- "output/"
 # so the polygons are created with radii half the size as the maxCrownDiameter. 
 # when this factor == 2, the polygons have a radius of (maxCrownDiameter / 4),
 # so the polygons are created with radii 50% smaller than the maxCrownDiameter.  
-crown_size_factor <- 1 # polygons have max diameter
-#crown_size_factor <- 2 # polygons have 50% of the max diameter
+#crown_size_factor <- 1 # polygons have max diameter
+crown_size_factor <- 2 # polygons have half of the max diameter
 
 # number of pixels used to threshold the area of polygons.
 # polygons smaller than this will be excluded at certain steps during the analysis. 

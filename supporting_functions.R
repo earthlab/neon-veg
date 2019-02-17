@@ -533,8 +533,15 @@ df_to_shp_points = function(df, coord_ref, shp_filename){
   message("\nCreating points based on mapped stem locations...")
   
   # select columns of interest
-  stem_locations <- df %>%
-    dplyr::select(easting, northing, individualID, scientificName, taxonID)
+  if("height" %in% colnames(df)){
+    stem_locations <- df %>%
+      dplyr::select(easting, northing, individualID, scientificName, taxonID, height,maxCrownDiameter)
+    
+  } else{
+    stem_locations <- df %>%
+      dplyr::select(easting, northing, individualID, scientificName, taxonID)
+    
+  }
   
   # assign UTM coordinates to create SpatialPointsDataFrame
   coordinates(stem_locations) <- ~easting+northing
