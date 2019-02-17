@@ -103,7 +103,7 @@ woody_df_to_shp = function(df, coord_ref, shrink, num_sides, shp_filename){
     d = data.frame(scientificName = as.character(df$scientificName[i]),
                    taxonID = as.character(df$taxonID[i]),
                    individualID = df$individualID[i],
-                   crownDiam = df$maxCrownDiameter[i],
+                   maxCrownDiameter = df$maxCrownDiameter[i],
                    height = df$height[i])
     
     # turn the SpatialPolygons object into a SpatialPolygonsDataFrame
@@ -535,7 +535,7 @@ df_to_shp_points = function(df, coord_ref, shp_filename){
   # select columns of interest
   if("height" %in% colnames(df)){
     stem_locations <- df %>%
-      dplyr::select(easting, northing, individualID, scientificName, taxonID, height,maxCrownDiameter)
+      dplyr::select(easting, northing, individualID, scientificName, taxonID, height, maxCrownDiameter)
     
   } else{
     stem_locations <- df %>%
@@ -607,7 +607,7 @@ allometry_height_diam <- function(df, outFilename){
   # function to calculate linear model of crownDiam 
   # as a function of height 
   taxon_model <- function(df){
-    lm(crownDiam ~ height, data = df)
+    lm(maxCrownDiameter ~ height, data = df)
   }
   
   # for each species data set, calculate linear model
@@ -629,7 +629,7 @@ allometry_height_diam <- function(df, outFilename){
   # plot data points and fitted models using ggplot 
   g <- models %>%
     unnest(data) %>%
-    ggplot(aes(height, crownDiam)) +
+    ggplot(aes(height, maxCrownDiameter)) +
     geom_point(shape=1) + 
     facet_wrap(~taxonID) +    
     geom_smooth(method=lm) +
