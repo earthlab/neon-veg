@@ -1,3 +1,16 @@
+# create_tree_polygons.R 
+# Repo: https://github.com/earthlab/neon-veg 
+# 
+# This script creates points and polygons based on individual tree 
+# locations in NEON woody vegetation structure data downloaded from 
+# https://data.neonscience.org
+# 
+# Author: Victoria Scholl
+# Last updated: 06/30/19
+
+
+# Installation & setup ----------------------------------------------------
+
 # load packages 
 library(devtools)
 library(geoNEON)
@@ -14,12 +27,8 @@ library(dplyr)
 library(purrr)
 library(broom)
 
-
-########################### SETUP ##################################
-
 # path to NEON Woody Plant Vegetation Structure zip file 
 data_path <- "data/NIWO/NEON_struct-woody-plant.zip" 
-data_path <- "data/test_NIWO/NEON_struct-woody-plant.zip"
 
 # code for NEON site 
 site_code <- "NIWO"
@@ -33,24 +42,29 @@ site_code <- "NIWO"
 crown_size_factor <- 1 # polygons have max diameter
 #crown_size_factor <- 2 # polygons have half of the max diameter
 
+# define the specifid folder to store outputs within the main "output" 
+# directory. If it doesn't exist already, create it.
+out_dir <- "shapefiles_max_diameter"
+
 # number of pixels used to threshold the area of polygons.
-# polygons smaller than this will be excluded at certain steps during the analysis. 
-# the units of this threshold are # of pixels in the hyperspectral data set (1m x 1m) 
+# polygons smaller than this will be excluded at certain steps during 
+# the analysis. The units of this threshold are # of pixels in the 
+# hyperspectral data set (1m x 1m) 
 area_thresh_pixels <- 4
 
-# define the output directory. If it doesn't exist already, create it.
-out_dir <- "output/"
-check_create_dir(out_dir) # create top level "output" directory
-out_dir <- paste0(out_dir, site_code, "/")
-check_create_dir(out_dir) # create output folder for site
-
-#####################################################################
+# -------------------------------------------------------------------------
 
 # load local external functions 
-source("supporting_functions.R")
+source("code/supporting_functions.R")
 
 # create output directory if it does not exist 
+check_create_dir("output/") # create top level "output" directory
+# create directory named with the site code and specific output name. 
+check_create_dir(paste0("output/", site_code, "/"))
+# construct the final output directory name with site code 
+out_dir <- paste0("output/", site_code, "/", out_dir, "/")
 check_create_dir(out_dir)
+
 
 # create text file to keep track of the number of trees after each step
 count_file <- file(paste(out_dir,"tree_counts.txt", sep=""), "w")
@@ -326,10 +340,5 @@ allometries <- allometry_height_diam(stems_final,
                         paste("Crown diameter vs. height per species at",
                               site_code),
                         paste0(out_dir,"allometry.png"))
-
-
-
-# hyperspectral analysis --------------------------------------------------
-
 
 
