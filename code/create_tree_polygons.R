@@ -19,11 +19,10 @@ library(broom)
 
 # path to NEON Woody Plant Vegetation Structure zip file 
 data_path <- "data/NIWO/NEON_struct-woody-plant.zip" 
+data_path <- "data/test_NIWO/NEON_struct-woody-plant.zip"
 
-# specify output directory path and filename of output shapefile to be written
-#out_dir <= "output/"
-#out_dir <- "shapefiles_maxDiameter/"
-out_dir <- "shapefiles_halfDiameter/"
+# code for NEON site 
+site_code <- "NIWO"
 
 # factor to specify the relative size of the polygons generated.
 # the radius of each polygon is divided by this value. 
@@ -31,13 +30,19 @@ out_dir <- "shapefiles_halfDiameter/"
 # so the polygons are created with radii half the size as the maxCrownDiameter. 
 # when this factor == 2, the polygons have a radius of (maxCrownDiameter / 4),
 # so the polygons are created with radii 50% smaller than the maxCrownDiameter.  
-#crown_size_factor <- 1 # polygons have max diameter
-crown_size_factor <- 2 # polygons have half of the max diameter
+crown_size_factor <- 1 # polygons have max diameter
+#crown_size_factor <- 2 # polygons have half of the max diameter
 
 # number of pixels used to threshold the area of polygons.
 # polygons smaller than this will be excluded at certain steps during the analysis. 
 # the units of this threshold are # of pixels in the hyperspectral data set (1m x 1m) 
 area_thresh_pixels <- 4
+
+# define the output directory. If it doesn't exist already, create it.
+out_dir <- "output/"
+check_create_dir(out_dir) # create top level "output" directory
+out_dir <- paste0(out_dir, site_code, "/")
+check_create_dir(out_dir) # create output folder for site
 
 #####################################################################
 
@@ -57,22 +62,22 @@ count_file <- file(paste(out_dir,"tree_counts.txt", sep=""), "w")
 
 # use the stackByTable function to unzip the woody veg structure data and 
 # combine the data into a single series of data tables. 
-# "dpID" is the Data Product ID; use 'DP1.10098.001' for woody veg structure. 
-neonUtilities::stackByTable(dpID = 'DP1.10098.001',
+# "dpID" is the Data Product ID; use "DP1.10098.001" for woody veg structure. 
+neonUtilities::stackByTable(dpID = "DP1.10098.001",
                             filepath = data_path)
 
 
 # read the mappingandtagging data table
 woody_mapping_all = read.csv(paste0(tools::file_path_sans_ext(data_path),
-                                    '/stackedFiles/',
-                                    'vst_mappingandtagging.csv'))
+                                    "/stackedFiles/",
+                                    "vst_mappingandtagging.csv"))
 
 # remove any duplicate individualID entries; keep most recent 
 woody_mapping <- remove_duplicates(woody_mapping_all)
 
 # check how many trees there are in the input mapping_and_tagging file 
 tree_count <- paste0(as.character(length(unique(woody_mapping$individualID))), 
-                     ' unique tree IDs in the mapping_and_tagging file')
+                     " unique tree IDs in the mapping_and_tagging file")
 print(tree_count)
 write(tree_count, count_file, append=TRUE)
 
@@ -82,29 +87,29 @@ woody_utm <- locate_woody_veg(woody_mapping_all)
 
 # check how many trees there are with mapped stem distance & azimuth
 tree_count <- paste0(as.character(length(unique(woody_utm$individualID))), 
-             ' trees with stem distance & azimuth values in the',
-             ' mappingandtagging data table')
+             " trees with stem distance & azimuth values in the",
+             " mappingandtagging data table")
 print(tree_count)
 write(tree_count, count_file, append=TRUE)
 
 
 # read the apparentindividual data table (contains height and crown diameter)
 woody_individual_all = read.csv(paste0(tools::file_path_sans_ext(data_path),
-                                       '/stackedFiles/',
-                                       'vst_apparentindividual.csv'))
+                                       "/stackedFiles/",
+                                       "vst_apparentindividual.csv"))
 
 # remove any duplicate individalID entries; keep most recent 
 woody_individual <- remove_duplicates(woody_individual_all)
 
 # keep only the entries with crown diameter and tree height
 # since these measurements are needed to create and compare polygons
-woody_ind_complete <- woody_individual[complete.cases(woody_individual$height) & 
-                                       complete.cases(woody_individual$maxCrownDiameter),]
+woody_ind_complete <- woody_individual[complete.cases(woody_individual$height) 
+                        & complete.cases(woody_individual$maxCrownDiameter),]
 
 # check how many trees there are in the input mapping_and_tagging file 
 tree_count <- paste0(as.character(length(unique(woody_ind_complete$individualID))), 
-             ' trees with height and max crown diameter values in the',
-             ' apparentindividual data table')
+          " trees with height and max crown diameter values in the",
+          " apparentindividual data table")
 print(tree_count)
 write(tree_count, count_file, append=TRUE)
 
@@ -118,7 +123,7 @@ woody_merged <- merge(woody_utm,
 
 # check how many trees have mapped locations (utm coordinates), height, & diam
 tree_count <- paste0(as.character(length(unique(woody_merged$individualID))), 
-             ' trees with location, height, and max crown diameter values')
+             " trees with location, height, and max crown diameter values")
 print(tree_count)
 write(tree_count, count_file, append=TRUE)
 
@@ -132,18 +137,19 @@ tiles <- list_tiles_with_plants(woody_utm, out_dir)
 # create coordinate reference system object based on
 # UTM zone info in the "vst_plotperyear" data table
 coord_ref <- get_vst_crs(paste0(tools::file_path_sans_ext(data_path),
-                                '/stackedFiles/'))
+                                "/stackedFiles/"))
 
 
 # remove multi-bole entries -----------------------------------------------
 
-# identify multi-bole trees: sometimes, there are multiple entries with identical
-# coordinates, height, and crown diameter (but their individualID's are different,
-# with "A", "B", etc. appended on the end of the last five numbers.) In this step, 
-# the individualID values are assessed to find multi-bole sets. 
-# if the coordinates, height, and crown diameters are identical, then the
-# entry with a letter appended on the end is deleted from the analysis. This prevents
-# duplicate polygons being used to extract spectra. 
+# identify multi-bole trees: sometimes, there are multiple entries with 
+# identical coordinates, height, and crown diameter (but their individualID's 
+# are different, with "A", "B", etc. appended on the end of the last five 
+# numbers.) In this step, the individualID values are assessed to find 
+# multi-bole sets. If the coordinates, height, and crown diameters are 
+# identical, then the entry with a letter appended on the end is deleted 
+# from the analysis. This prevents duplicate polygons being used to extract 
+# spectra. 
 
 # get a list of all individual ID strings 
 individualIDs_all <- as.character(unique(droplevels(woody_merged$individualID)))
@@ -166,7 +172,8 @@ id_lut <- as.data.frame(last_digits) %>%
                    height = woody_merged$height,
                    maxCrownDiameter = woody_merged$maxCrownDiameter)
 
-# count the frequency of each ID number. identify the ID's with more than one entry. 
+# count the frequency of each ID number. identify the ID's with more than 
+# one entry. 
 multiple_ids <- as.data.frame(table(last_digits)) %>% 
   filter(Freq >1)
 
@@ -176,25 +183,25 @@ remove_ids <- c()
 # loop through the ID's that appear more than once in the data set
 for(id in as.character(multiple_ids$last_digits)){
   
-  print(id)
-  
   # get the complete individual IDs 
   duplicates <- print(id_lut[id_lut$last_digits == id,])
   
   # see if the height and diameter values are identical 
   if(var(duplicates$height)==0 && var(duplicates$maxCrownDiameter) == 0){
-    remove_ids <- c(remove_ids, duplicates$individualIDs_all[duplicates$is_bole==TRUE])
+    remove_ids <- c(remove_ids, 
+                    duplicates$individualIDs_all[duplicates$is_bole==TRUE])
   }
   
 }
 
-# remove the entries with the multi-bole individualIDs identified in the previous step. 
+# remove the entries with the multi-bole individualIDs identified in the 
+# previous step. 
 woody_multibole_removed <- woody_merged %>% 
-  filter(!(individualID %in%remove_ids))
+  dplyr::filter(!(individualID %in%remove_ids))
 
 # check how many trees are left after removing multi-bole entries
 tree_count <- paste0(as.character(length(unique(woody_multibole_removed$individualID))), 
-                     ' trees remaining after multi-bole entries were removed')
+                     " trees remaining after multi-bole entries were removed")
 print(tree_count)
 write(tree_count, count_file, append=TRUE)
 
@@ -202,6 +209,8 @@ write(tree_count, count_file, append=TRUE)
 # apply processing steps and create polygons ------------------------------
 
 # write shapefile with points for every mapped stem 
+# NOTE this includes multi-bole entries and individuals without height or 
+# crown diameter
 df_to_shp_points(woody_utm, 
                  coord_ref, 
                  shp_filename = paste(out_dir,
@@ -224,6 +233,13 @@ woody_df_to_shp(df = woody_merged,
                      shp_filename = paste(out_dir,
                                            "polygons_all",
                                            sep = ""))
+
+# write shapefile with points after multibole entries have been removed
+df_to_shp_points(woody_multibole_removed, 
+                 coord_ref, 
+                 shp_filename = paste(out_dir,
+                                      "mapped_stems_woody_multibole_removed",
+                                      sep = ""))
 
 # write polygons to file after multi-bole entries have been removed 
 # (this is before the area threshold filtering step)
@@ -281,7 +297,8 @@ woody_clipped <- clip_overlap(woody_delete_engulfed,
 # write shapefile of mapped stem locations for final polygons 
 # get the easting and northing tree coordinates from woody_thresh data frame
 stems_final <- as.data.frame(woody_clipped) 
-stems_coordinates <- woody_thresh %>% dplyr::select(individualID, easting, northing)
+stems_coordinates <- woody_thresh %>% 
+  dplyr::select(individualID, easting, northing)
 stems_final <- merge(stems_final, stems_coordinates, by = "individualID")
 df_to_shp_points(stems_final, 
                  coord_ref, 
@@ -306,6 +323,13 @@ species_table
 
 # construct height-crown diameter allometry for each species.
 allometries <- allometry_height_diam(stems_final, 
-                                     paste0(out_dir,"allometry.png"))
+                        paste("Crown diameter vs. height per species at",
+                              site_code),
+                        paste0(out_dir,"allometry.png"))
+
+
+
+# hyperspectral analysis --------------------------------------------------
+
 
 

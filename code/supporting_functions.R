@@ -431,7 +431,7 @@ polygon_overlap <- function(df, nPix, shp_filename){
     }
   }
   
-  print(polys_filtered)
+  #print(polys_filtered)
   
   # write final polygons to file after checking for overlap
   writeOGR(polys_filtered, getwd(),
@@ -588,7 +588,7 @@ apply_height_threshold <- function(df, ht){
 
 # allometry_height_diam ---------------------------------------------------
 
-allometry_height_diam <- function(df, outFilename){
+allometry_height_diam <- function(df, plot_title, out_filename){
   # calculates linear regression models for each taxonID 
   # within the input data frame. 
   # Dependent variable: crown diameter (m) 
@@ -633,11 +633,12 @@ allometry_height_diam <- function(df, outFilename){
     geom_point(shape=1) + 
     facet_wrap(~taxonID) +    
     geom_smooth(method=lm) +
-    labs(x = "height (m)", y = "crown diameter (m)")
+    labs(x = "height (m)", y = "crown diameter (m)") + 
+    ggtitle(plot_title)
   print(g)
   
   # write plot image to file 
-  ggsave(outFilename, g, width = 8, height = 4)
+  ggsave(out_filename, g, width = 8, height = 4)
   
   return(models)
   
