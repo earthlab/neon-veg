@@ -966,3 +966,133 @@ clip_overlap <- function(df, nPix, shp_filename){
 }
 
 
+# Stack_hyperspectral -----------------------------------------------------
+
+stack_hyperspectral <- function(h5, out_dir){
+  # This function creates a rasterstack object for the specified HDF5 
+  # filename. 
+  #
+  # Args: 
+  # h5
+  #   character string filename of HDF5 file 
+  # out_dir
+  #   directory for output files where the wavelengths will be written to
+  #   a text file for further analysis
+  #
+  # Returns: 
+  # s
+  #   RasterStack (collection of Raster layers with the same spatial extent
+  #   and resolution) containing nrows x ncols x nbands, based on the 
+  #   resolution and number of bands in the HDF5 file. This RasterStack
+  #   can then be clipped using Spatial vector layers. 
+  #
+  
+  
+  # list the contents of HDF5 file
+  h5_struct <- rhdf5::h5ls(h5, all=T)
+  
+  # construct the string using "/Reflectance/Metadata/Coordinate_System",
+  # without explicitly using a site code 
+  crs_tag <- h5_struct$group[grepl("/Reflectance/Metadata/Coordinate_System", 
+                                   h5_struct$group)][1] 
+  
+  # read coordinate reference system data
+  crs_info <- rhdf5::h5read(h5, crs_tag)
+  
+  # convert "UTM" to lowercase "utm" for proper usage later
+  crs_info$Proj4 <- CRS(chartr("UTM", "utm", crs_info$Proj4))
+  
+  # get attributes for the Reflectance dataset.
+  # construct the string using "/Reflectance/Reflectance_Data"" 
+  refl_tag <- paste0(h5_struct$group[grepl("/Reflectance", 
+                                           h5_struct$group)][1],
+                     "/Reflectance_Data")
+  
+  # read the reflectance metadata
+  refl_info <- rhdf5::h5readAttributes(h5,refl_tag)
+  
+  # get the dimensions of the reflectance data
+  n_rows <- refl_info$Dimensions[1]
+  n_cols <- refl_info$Dimensions[2]
+  n_bands <- refl_info$Dimensions[3]
+  
+  # print dimensions 
+  print(paste0("# Rows: ", as.character(n_rows)))
+  print(paste0("# Columns: ", as.character(n_cols)))
+  print(paste0("# Bands: ", as.character(n_bands)))
+  
+  # read the wavelengths of the hyperspectral image bands
+  wavelength_tag <- paste0(h5_struct$group[grepl("/Reflectance/Metadata/Spectral_Data", 
+                                                 h5_struct$group)][1],
+                           "/Wavelength")
+  wavelengths <- rhdf5::h5read(h5,
+                               wavelength_tag)
+  
+  # define spatial extent: extract resolution and origin coordinates
+  map_info <- unlist(strsplit(crs_info$Map_Info, 
+                              split = ", "))
+  res_x <- as.numeric(map_info[6])
+  res_y <- as.numeric(map_info[7])
+  x_min <- as.numeric(map_info[4])
+  y_max <- as.numeric(map_info[5])
+  
+  # calculate the maximum X and minimum Y values 
+  x_max <- (x_min + (n_cols * res_x))
+  y_min <- (y_max - (n_rows * res_y))
+  tile_extent <- raster::extent(x_min, x_max, y_min, y_max)
+  print("tile extent")
+  print(tile_extent)
+  
+  # read reflectance data for all bands
+  refl <- rhdf5::h5read(h5, refl_tag,
+                        index = list(1:n_bands, 1:n_cols, 1:n_rows))
+  
+  # view and apply scale factor to convert integer values to reflectance [0,1]
+  # and data ignore value
+  scale_factor <- refl_info$Scale_Factor
+  data_ignore <- refl_info$Data_Ignore_Value
+  refl[refl == data_ignore] <- NA 
+  refl_scaled <- refl / scale_factor
+  
+  # create georeferenced raster using band 1 
+  r1 <- (refl_scaled[1,,]) # convert first band to matrix
+  # transpose the image pixels for proper orientation to match
+  # the other layers. create a raster for this band and assign
+  # the CRS.
+  print("Transposing reflectance data for proper orientation")
+  r1 <- raster::t(raster::raster(r1, crs = crs_info$Proj4))
+  extent(r1) <- tile_extent
+  
+  # start the raster stack with first band 
+  s <- raster::stack(r1)
+  
+  # loop through bands and create a giant rasterstack with 426 (n_bands) bands
+  for(b in 2:n_bands){
+    print(b)
+    
+    # create raster with current band
+    r <- (refl_scaled[b,,]) # convert to matrix
+    r <- raster::t(raster::raster(r, crs = crs_info$Proj4))
+    extent(r) <- tile_extent
+    
+    # add additional band to the stack with the addLayer function
+    s <- raster::addLayer(s, r)
+    
+  }
+  
+  # adjust the names for each layer in raster stack to correspond to wavelength
+  names(s) <- round(wavelengths)
+  
+  # write wavelengths to a text file 
+  # write the exact wavelengths to file for future use 
+  write.table(data.frame(wavelengths = wavelengths),
+              paste0(out_dir,"wavelengths.txt"),
+              sep="\n",
+              row.names=FALSE)
+  
+  # return the stacked hyperspectral data to clip with vector files 
+  return(s)
+  
+}
+
+
