@@ -47,7 +47,7 @@ At this point, this workflow has generated a collection of polygons that will th
 
 ### 4. Download AOP imagery
 
-Download selected NEON Airborne Observation Platform (AOP) remote sensing mosaic data product tiles for the site and year of interest (saved to the following directory in the project: "data/data_raw/SITE_YEAR"). Each data product is downloaded to a deeply nested subdirectory structure in a top folder named with the data product ID (i.e. "DP3.30006.001"). Each set of files are moved into a folder with a short intuitive pathname (i.e. "data/data_raw/SITE_YEAR/hyperspectral")). 
+Download selected NEON Airborne Observation Platform (AOP) remote sensing mosaic data product tiles for the site and year of interest (saved to the following directory in the project: "data/data_raw/"). Each data product is downloaded to a deeply nested subdirectory structure in a top folder named with the data product ID (i.e. "DP3.30006.001"). Each set of files are then moved into a folder with a short intuitive pathname (i.e. "data/data_raw/hyperspectral")). 
 
 | Data Product Name                                    | Data Product ID |
 | :---                                                   | ---             |
