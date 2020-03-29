@@ -20,7 +20,7 @@ Perform tree species classification using freely available data from the Nationa
 
 ### Workflow
 
-In RStudio, click the "neon_veg_classify_species.Rproj" file to open this R project.
+In RStudio, open the "neon_veg.Rproj" file to open this R project.
 
 Open "01-main.R". 
 
