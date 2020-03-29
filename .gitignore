@@ -42,9 +42,11 @@ rsconnect/
 output/*
 
 # data directory
-SJER/*
-NIWO/*
-sample_data/*
+data/*
 
 # Rproject files
 *.Rproj
+.Rproj.user/
+
+# ipython notebook files
+.ipynb*
