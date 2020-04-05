@@ -45,7 +45,7 @@ output/*
 data/*
 
 # Rproject files
-*.Rproj
+.Rproj
 .Rproj.user/
 
 # ipython notebook files
